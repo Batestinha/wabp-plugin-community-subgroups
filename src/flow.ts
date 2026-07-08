@@ -7,9 +7,9 @@ export const SUBGROUP_CONFIRM_STEP_ID = 'confirm';
 export const PIN_DURATION_STEP_ID = 'duration';
 
 export const PIN_DURATION_OPTIONS = [
-  { id: '24h', label: '24 hours', seconds: 86_400 },
-  { id: '7d', label: '7 days', seconds: 604_800 },
-  { id: '30d', label: '30 days', seconds: 2_592_000 }
+  { id: '24h', labelKey: 'official.community-subgroups.pin.duration.24h', seconds: 86_400 },
+  { id: '7d', labelKey: 'official.community-subgroups.pin.duration.7d', seconds: 604_800 },
+  { id: '30d', labelKey: 'official.community-subgroups.pin.duration.30d', seconds: 2_592_000 }
 ] as const;
 
 export interface SubgroupFlowAnswers {
@@ -111,7 +111,7 @@ export function createPinDurationFlowDefinition(input: {
         }),
         mentionedWidsForState: () => [input.actorWid],
         options: PIN_DURATION_OPTIONS.map((option) => ({
-          label: option.label,
+          label: input.t(option.labelKey),
           value: option.seconds
         })),
         minSelections: 1,
@@ -147,8 +147,9 @@ export function pinDurationSeconds(snapshot: FlowSessionSnapshot): number | unde
     : undefined;
 }
 
-export function pinDurationLabel(seconds: number): string {
-  return PIN_DURATION_OPTIONS.find((option) => option.seconds === seconds)?.label ?? `${seconds} seconds`;
+export function pinDurationLabel(seconds: number, t: TranslateFn): string {
+  const option = PIN_DURATION_OPTIONS.find((candidate) => candidate.seconds === seconds);
+  return option ? t(option.labelKey) : `${seconds} seconds`;
 }
 
 export function parseParticipantWids(input: string, mentionedWids: string[] = []): string[] {

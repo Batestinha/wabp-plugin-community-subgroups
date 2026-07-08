@@ -296,7 +296,7 @@ function registerPinDurationHandler(
     try {
       await activeTransport.pinMessage(draft.messageId, durationSeconds);
       await activeTransport.sendText(draft.chatId, t('official.community-subgroups.pin.done', {
-        durationLabel: pinDurationLabel(durationSeconds)
+        durationLabel: pinDurationLabel(durationSeconds, t)
       }), { quotedMessageId: draft.messageId });
     } catch (error) {
       await activeTransport.sendText(draft.chatId, t('official.community-subgroups.pin.failed', {
