@@ -24,6 +24,7 @@ export function createSubgroupFlowDefinition(input: {
   const flowType = `official.community-subgroups.create.${randomUUID()}`;
   return {
     flowType,
+    t: input.t,
     initialStepId: 'title',
     context: 'group',
     timeoutMinutes: 30,
@@ -98,6 +99,7 @@ export function createPinDurationFlowDefinition(input: {
   const flowType = `official.community-subgroups.pin.${randomUUID()}`;
   return {
     flowType,
+    t: input.t,
     initialStepId: PIN_DURATION_STEP_ID,
     context: 'group',
     timeoutMinutes: 10,
