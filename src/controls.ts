@@ -8,7 +8,8 @@ function control(
   description: string,
   order: number,
   schema: ControlSchemaMetadata,
-  ui: ControlUiHint
+  ui: ControlUiHint,
+  section = 'Community subgroups'
 ): ControlDescriptor {
   return defineControl({
     id: `plugin.official.community-subgroups.${path}`,
@@ -16,7 +17,7 @@ function control(
     description,
     plane: 'plugin-scope-config',
     domain: 'official-plugin-settings',
-    section: 'Community subgroups',
+    section,
     order,
     visibility: 'bot_admin',
     configurable: true,
@@ -32,13 +33,55 @@ function control(
   });
 }
 
+const MEMBER_PERMISSION_OPTIONS = [
+  { value: 'all_members', label: 'All members' },
+  { value: 'admins_only', label: 'Only admins' }
+];
+
+const COMMUNITY_PERMISSION_OPTIONS = [
+  { value: 'everyone', label: 'Everyone' },
+  { value: 'community_admins', label: 'Only community admins' }
+];
+
+const DISAPPEARING_MESSAGES_OPTIONS = [
+  { value: 'off', label: 'Off' },
+  { value: '24h', label: '24 hours' },
+  { value: '7d', label: '7 days' },
+  { value: '90d', label: '90 days' }
+];
+
 export const communitySubgroupsControls: ControlDescriptor[] = [
   control('enabled', 'Enabled', 'Allow members to create and manage community subgroups through the bot.', 10, { type: 'boolean' }, { widget: 'toggle' }),
-  control('autoSendInviteV4', 'Send invite fallback', 'Send WhatsApp invite requests when members cannot be added directly.', 20, { type: 'boolean' }, { widget: 'toggle' }),
   control('maxParticipants', 'Maximum members', 'Maximum number of requested members in one subgroup creation flow.', 30, {
     type: 'number',
     unit: 'items',
     min: 1,
     max: 256
-  }, { widget: 'number' })
+  }, { widget: 'number' }),
+  control('creationPolicy.autoSendInviteV4', 'Send invite fallback', 'Send WhatsApp invite requests when members cannot be added directly.', 100, { type: 'boolean' }, { widget: 'toggle' }, 'New subgroup defaults'),
+  control('creationPolicy.infoEditPermission', 'Edit group info', 'Choose who can edit the new subgroup name, icon, description, and settings.', 110, {
+    type: 'enum',
+    enum: MEMBER_PERMISSION_OPTIONS
+  }, { widget: 'select', options: MEMBER_PERMISSION_OPTIONS }, 'New subgroup defaults'),
+  control('creationPolicy.sendMessagesPermission', 'Send messages', 'Choose whether all members or only admins can send messages in new subgroups.', 120, {
+    type: 'enum',
+    enum: MEMBER_PERMISSION_OPTIONS
+  }, { widget: 'select', options: MEMBER_PERMISSION_OPTIONS }, 'New subgroup defaults'),
+  control('creationPolicy.memberAddPermission', 'Add members / invite links', 'Choose who can add members and create or share invite links in new subgroups.', 130, {
+    type: 'enum',
+    enum: MEMBER_PERMISSION_OPTIONS
+  }, { widget: 'select', options: MEMBER_PERMISSION_OPTIONS }, 'New subgroup defaults'),
+  control('creationPolicy.joinApproval', 'Approve new members', 'Require admins to approve new subgroup join requests.', 140, { type: 'boolean' }, { widget: 'toggle' }, 'New subgroup defaults'),
+  control('creationPolicy.disappearingMessages', 'Disappearing messages', 'Set the disappearing-message timer for new subgroups.', 150, {
+    type: 'enum',
+    enum: DISAPPEARING_MESSAGES_OPTIONS
+  }, { widget: 'select', options: DISAPPEARING_MESSAGES_OPTIONS }, 'New subgroup defaults'),
+  control('creationPolicy.parentGroupAddPermission', 'Who can add groups', 'Choose who can add groups to the parent community before creating a subgroup.', 200, {
+    type: 'enum',
+    enum: COMMUNITY_PERMISSION_OPTIONS
+  }, { widget: 'select', options: COMMUNITY_PERMISSION_OPTIONS }, 'Parent community defaults'),
+  control('creationPolicy.parentMemberAddPermission', 'Who can add members', 'Choose who can add new members to the parent community before creating a subgroup.', 210, {
+    type: 'enum',
+    enum: COMMUNITY_PERMISSION_OPTIONS
+  }, { widget: 'select', options: COMMUNITY_PERMISSION_OPTIONS }, 'Parent community defaults')
 ];

@@ -3,6 +3,7 @@ import type { CommandContext } from '../../../adminBot/router/commandRouter';
 import type { PluginCommandContext } from '../../../platform/pluginRuntime/types';
 import { requireOfficialCommandRuntime, requireScopeId } from '../shared';
 import { parseCommunitySubgroupsConfig } from './config';
+import type { CommunitySubgroupCreationPolicy } from './creationPolicy';
 import {
   createPinDurationFlowDefinition,
   createSubgroupFlowDefinition,
@@ -24,7 +25,7 @@ interface SubgroupDraft {
   chatId: string;
   actorWid: string;
   parentCommunityWid: string;
-  autoSendInviteV4: boolean;
+  creationPolicy: CommunitySubgroupCreationPolicy;
   maxParticipants: number;
 }
 
@@ -113,7 +114,7 @@ async function startCreateFlow(context: PluginCommandContext, ctx: CommandContex
     chatId: ctx.message.chatId,
     actorWid: ctx.actor?.wid ?? ctx.message.senderWid,
     parentCommunityWid,
-    autoSendInviteV4: config.autoSendInviteV4,
+    creationPolicy: config.creationPolicy,
     maxParticipants: config.maxParticipants
   };
   await runtime.dataStore.set(subgroupDraftKey(scopeId, flowSessionId), draft);
@@ -163,7 +164,7 @@ function registerSubgroupFlowCompletionHandler(
         ...(answers.description ? { description: answers.description } : {}),
         participantWids,
         parentCommunityWid: draft.parentCommunityWid,
-        autoSendInviteV4: draft.autoSendInviteV4
+        creationPolicy: draft.creationPolicy
       });
       await activeTransport.sendText(draft.chatId, t('official.community-subgroups.create.created', {
         title: result.created.title,
