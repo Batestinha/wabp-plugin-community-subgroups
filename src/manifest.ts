@@ -30,6 +30,30 @@ export const communitySubgroupsManifest: PluginManifest = {
     'message.unpin'
   ],
   backgroundJobs: [],
+  cancellation: {
+    workflows: [
+      {
+        id: 'subgroup-create',
+        description: 'Guided subgroup creation before the managed group is created.',
+        mode: 'core-flow',
+        scope: 'actor-chat',
+        commands: ['/subgroup create'],
+        cancellableStates: ['active'],
+        terminalStates: ['completed', 'cancelled', 'expired'],
+        effects: ['discard-subgroup-draft']
+      },
+      {
+        id: 'pin-duration',
+        description: 'Guided pin-duration choice before a quoted message is pinned.',
+        mode: 'core-flow',
+        scope: 'actor-chat',
+        commands: ['/pin'],
+        cancellableStates: ['active'],
+        terminalStates: ['completed', 'cancelled', 'expired'],
+        effects: ['discard-pin-draft']
+      }
+    ]
+  },
   assistant: {
     summary: 'Member-facing creation and management of community child groups.',
     useCases: [
