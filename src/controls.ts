@@ -23,7 +23,7 @@ function control(
     configurable: true,
     storage: { kind: 'plugin-scope-config', pluginId: COMMUNITY_SUBGROUPS_PLUGIN_ID, path },
     schema,
-    ui,
+    ui: { helpText: description, ...ui },
     restartRequirement: 'NO_RESTART',
     dangerous: false,
     sensitivity: { sensitive: false, redact: 'none' },
