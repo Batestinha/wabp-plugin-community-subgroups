@@ -187,6 +187,14 @@ async function updateTitle(context: PluginCommandContext, ctx: CommandContext) {
     return { handled: true, text: ctx.t('official.community-subgroups.childOnly') };
   }
   const subject = ctx.command.rawArgs.trim();
+  const delegated = await context.handleGroupTitleChangeIntent?.({
+    sourcePluginId: COMMUNITY_SUBGROUPS_PLUGIN_ID,
+    requestedTitle: subject,
+    commandContext: ctx
+  });
+  if (delegated) {
+    return delegated;
+  }
   if (!subject) {
     return { handled: true, text: ctx.t('official.community-subgroups.titleUsage') };
   }
