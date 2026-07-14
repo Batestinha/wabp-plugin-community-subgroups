@@ -100,7 +100,7 @@ async function startCreateFlow(context: PluginCommandContext, ctx: CommandContex
 
   const definition = createSubgroupFlowDefinition({ t: ctx.t });
   registerSubgroupFlowCompletionHandler(context, definition.flowType, ctx.t);
-  const flowSessionId = await context.flowEngine.startFlow({
+  const { flowSessionId } = await context.flowEngine.startFlow({
     definition,
     message: ctx.message,
     scopeId
@@ -241,7 +241,7 @@ async function startPinDurationFlow(context: PluginCommandContext, ctx: CommandC
   const actorWid = ctx.actor?.wid ?? ctx.message.senderWid;
   const definition = createPinDurationFlowDefinition({ t: ctx.t, actorWid });
   registerPinDurationHandler(context, definition.flowType, ctx.t);
-  const flowSessionId = await context.flowEngine.startFlow({
+  const { flowSessionId } = await context.flowEngine.startFlow({
     definition,
     message: ctx.message,
     scopeId,
