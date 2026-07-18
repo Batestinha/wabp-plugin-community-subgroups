@@ -16,6 +16,11 @@ import {
   subgroupFlowConfirmed
 } from './flow';
 import { COMMUNITY_SUBGROUPS_PLUGIN_ID } from './manifest';
+import {
+  COMMUNITY_SUBGROUPS_CREATE_METHOD,
+  COMMUNITY_SUBGROUPS_SERVICE_ID,
+  type CommunitySubgroupCreateOutput
+} from './serviceApi';
 
 interface SubgroupDraft {
   flowSessionId: string;
@@ -146,7 +151,7 @@ function registerSubgroupFlowCompletionHandler(
       return true;
     }
     const answers = subgroupFlowAnswers(snapshot);
-    if (!answers || !context.createManagedCommunitySubgroup) {
+    if (!answers || !context.services) {
       await activeTransport.sendText(draft.chatId, t('official.community-subgroups.create.invalid'));
       return true;
     }
@@ -158,14 +163,20 @@ function registerSubgroupFlowCompletionHandler(
       return true;
     }
     try {
-      const result = await context.createManagedCommunitySubgroup({
+      const result = await context.services.call<CommunitySubgroupCreateOutput>({
+        serviceId: COMMUNITY_SUBGROUPS_SERVICE_ID,
+        method: COMMUNITY_SUBGROUPS_CREATE_METHOD,
         scopeId: draft.scopeId,
         actorWid: draft.actorWid,
-        title: answers.title,
-        ...(answers.description ? { description: answers.description } : {}),
-        participantWids,
-        parentCommunityWid: draft.parentCommunityWid,
-        creationPolicy: draft.creationPolicy
+        ...(draft.groupId ? { groupId: draft.groupId } : {}),
+        ...(draft.groupWid ? { groupWid: draft.groupWid } : {}),
+        input: {
+          title: answers.title,
+          ...(answers.description ? { description: answers.description } : {}),
+          participantWids,
+          parentCommunityWid: draft.parentCommunityWid,
+          creationPolicy: draft.creationPolicy
+        }
       });
       await activeTransport.sendText(draft.chatId, t('official.community-subgroups.create.created', {
         title: result.created.title,

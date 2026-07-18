@@ -1,6 +1,10 @@
 import type { PluginManifest } from '../../../platform/pluginRuntime/manifest';
 import { communitySubgroupsConfigSchema } from './config';
 import { communitySubgroupsMessages } from './messages';
+import {
+  COMMUNITY_SUBGROUPS_CREATE_METHOD,
+  COMMUNITY_SUBGROUPS_SERVICE_ID
+} from './serviceApi';
 
 export const COMMUNITY_SUBGROUPS_PLUGIN_ID = 'official.community-subgroups';
 
@@ -19,6 +23,13 @@ export const communitySubgroupsManifest: PluginManifest = {
     '/pin',
     '/unpin'
   ],
+  services: [{
+    serviceId: COMMUNITY_SUBGROUPS_SERVICE_ID,
+    methods: [{
+      name: COMMUNITY_SUBGROUPS_CREATE_METHOD,
+      access: 'mutation'
+    }]
+  }],
   eventSubscriptions: [],
   requiredPermissions: [],
   requiredBotCapabilities: [],
