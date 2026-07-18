@@ -94,7 +94,7 @@ export function createSubgroupFlowDefinition(input: {
 
 export function createPinDurationFlowDefinition(input: {
   t: TranslateFn;
-  actorWid: string;
+  promptQuotedMessageId?: string | undefined;
 }): FlowDefinition {
   const flowType = `official.community-subgroups.pin.${randomUUID()}`;
   return {
@@ -103,15 +103,17 @@ export function createPinDurationFlowDefinition(input: {
     initialStepId: PIN_DURATION_STEP_ID,
     context: 'group',
     timeoutMinutes: 10,
-    completionReply: input.t('official.community-subgroups.pin.apply'),
+    completionReply: false,
     steps: {
       [PIN_DURATION_STEP_ID]: {
         id: PIN_DURATION_STEP_ID,
         kind: 'choice',
-        prompt: input.t('official.community-subgroups.pin.prompt', {
-          actorHandle: widHandle(input.actorWid)
-        }),
-        mentionedWidsForState: () => [input.actorWid],
+        prompt: input.t('official.community-subgroups.pin.prompt'),
+        ...(input.promptQuotedMessageId ? {
+          promptSendOptionsForState: () => ({
+            quotedMessageId: input.promptQuotedMessageId
+          })
+        } : {}),
         options: PIN_DURATION_OPTIONS.map((option) => ({
           label: input.t(option.labelKey),
           value: option.seconds
@@ -199,10 +201,6 @@ function phoneWidsFromSpacedInternationalNumbers(input: string): string[] {
     const digits = match.replace(/[^\d]/g, '');
     return digits.length >= 7 && digits.length <= 15 ? [`${digits}@c.us`] : [];
   });
-}
-
-function widHandle(wid: string): string {
-  return wid.split('@')[0] || wid;
 }
 
 function unique(values: string[]): string[] {

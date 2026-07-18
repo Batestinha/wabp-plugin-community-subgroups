@@ -1,5 +1,6 @@
 import type { CommandMetadata } from '../../../adminBot/router/commandMetadata';
 import type { CommandContext } from '../../../adminBot/router/commandRouter';
+import { logger } from '../../../platform/logging/logger';
 import type { PluginCommandContext } from '../../../platform/pluginRuntime/types';
 import { requireOfficialCommandRuntime, requireScopeId } from '../shared';
 import { parseCommunitySubgroupsConfig } from './config';
@@ -247,7 +248,10 @@ async function startPinDurationFlow(context: PluginCommandContext, ctx: CommandC
     return { handled: true, text: ctx.t('official.community-subgroups.pinQuotedOnly') };
   }
   const actorWid = ctx.actor?.wid ?? ctx.message.senderWid;
-  const definition = createPinDurationFlowDefinition({ t: ctx.t, actorWid });
+  const definition = createPinDurationFlowDefinition({
+    t: ctx.t,
+    promptQuotedMessageId: ctx.message.id
+  });
   registerPinDurationHandler(context, definition.flowType, ctx.t);
   const { flowSessionId } = await context.flowEngine.startFlow({
     definition,
@@ -266,7 +270,7 @@ async function startPinDurationFlow(context: PluginCommandContext, ctx: CommandC
     messageId: ctx.message.quotedMsgId
   };
   await runtime.dataStore.set(pinDraftKey(scopeId, flowSessionId), draft);
-  return { handled: true, text: ctx.t('official.community-subgroups.pin.started') };
+  return { handled: true };
 }
 
 function registerPinDurationHandler(
@@ -291,14 +295,16 @@ function registerPinDurationHandler(
     const durationSeconds = pinDurationSeconds(snapshot);
     if (!durationSeconds) {
       await activeTransport.sendText(draft.chatId, t('official.community-subgroups.pin.failed', {
-        reason: 'invalid duration'
+        reason: t('official.community-subgroups.pin.failed.invalidDuration')
       }));
       return true;
     }
     const capabilities = await context.botCapabilitiesFor?.(draft.groupWid);
     if (capabilities && (!capabilities.botIsAdmin || !capabilities.canDeleteMessages)) {
       await activeTransport.sendText(draft.chatId, t('official.community-subgroups.pin.failed', {
-        reason: !capabilities.botIsAdmin ? 'bot is not a group admin' : 'bot cannot pin messages'
+        reason: !capabilities.botIsAdmin
+          ? t('official.community-subgroups.pin.failed.botNotAdmin')
+          : t('official.community-subgroups.pin.failed.unsupported')
       }));
       return true;
     }
@@ -308,8 +314,14 @@ function registerPinDurationHandler(
         durationLabel: pinDurationLabel(durationSeconds, t)
       }), { quotedMessageId: draft.messageId });
     } catch (error) {
+      logger.warn({
+        error,
+        scopeId: draft.scopeId,
+        groupWid: draft.groupWid,
+        messageId: draft.messageId
+      }, 'Unable to pin community subgroup message');
       await activeTransport.sendText(draft.chatId, t('official.community-subgroups.pin.failed', {
-        reason: errorMessage(error)
+        reason: t('official.community-subgroups.pin.failed.transport')
       }));
     }
     return true;
