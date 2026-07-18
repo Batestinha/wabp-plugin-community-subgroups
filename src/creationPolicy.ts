@@ -11,7 +11,7 @@ export const communitySubgroupCreationPolicySchema = z.object({
   memberAddPermission: communitySubgroupPermissionSchema.default('all_members'),
   joinApproval: z.boolean().default(false),
   disappearingMessages: communitySubgroupDisappearingMessagesSchema.default('off'),
-  parentGroupAddPermission: communitySubgroupCommunityPermissionSchema.default('community_admins'),
+  parentGroupCreatePermission: communitySubgroupCommunityPermissionSchema.default('community_admins'),
   parentMemberAddPermission: communitySubgroupCommunityPermissionSchema.default('everyone')
 }).default({});
 
