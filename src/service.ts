@@ -3,6 +3,7 @@ import type { PluginServiceRegistration } from '../../../platform/pluginRuntime/
 import { parseCommunitySubgroupsConfig } from './config';
 import {
   COMMUNITY_SUBGROUPS_CREATE_METHOD,
+  COMMUNITY_SUBGROUPS_CREATE_TIMEOUT_MS,
   COMMUNITY_SUBGROUPS_SERVICE_ID,
   type CommunitySubgroupCreateInput,
   communitySubgroupCreateInputSchema,
@@ -17,6 +18,7 @@ export function registerCommunitySubgroupServices(
     methods: [{
       name: COMMUNITY_SUBGROUPS_CREATE_METHOD,
       access: 'mutation',
+      timeoutMs: COMMUNITY_SUBGROUPS_CREATE_TIMEOUT_MS,
       inputSchema: communitySubgroupCreateInputSchema,
       outputSchema: communitySubgroupCreateOutputSchema,
       async handler(rawInput, call) {

@@ -3,6 +3,7 @@ import { communitySubgroupCreationPolicySchema } from './creationPolicy';
 
 export const COMMUNITY_SUBGROUPS_SERVICE_ID = 'official.community-subgroups.v1';
 export const COMMUNITY_SUBGROUPS_CREATE_METHOD = 'createManagedSubgroup';
+export const COMMUNITY_SUBGROUPS_CREATE_TIMEOUT_MS = 120_000;
 
 const createdGroupParticipantResultSchema = z.object({
   statusCode: z.number().int().optional(),
