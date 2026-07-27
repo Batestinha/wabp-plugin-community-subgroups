@@ -255,7 +255,7 @@ async function startPinDurationFlow(context: PluginCommandContext, ctx: CommandC
   if (!await isCommunityChild(context, ctx)) {
     return { handled: true, text: ctx.t('official.community-subgroups.childOnly') };
   }
-  if (!ctx.message.quotedMsgId) {
+  if (!ctx.message.replyTo) {
     return { handled: true, text: ctx.t('official.community-subgroups.pinQuotedOnly') };
   }
   const actorWid = ctx.actor?.wid ?? ctx.message.senderWid;
@@ -278,7 +278,7 @@ async function startPinDurationFlow(context: PluginCommandContext, ctx: CommandC
     groupWid: ctx.groupWid!,
     chatId: ctx.message.chatId,
     actorWid,
-    messageId: ctx.message.quotedMsgId
+    messageId: ctx.message.replyTo.messageId
   };
   await runtime.dataStore.set(pinDraftKey(scopeId, flowSessionId), draft);
   return { handled: true };
@@ -346,7 +346,7 @@ async function unpinQuotedMessage(context: PluginCommandContext, ctx: CommandCon
   if (!await isCommunityChild(context, ctx)) {
     return { handled: true, text: ctx.t('official.community-subgroups.childOnly') };
   }
-  if (!ctx.message.quotedMsgId) {
+  if (!ctx.message.replyTo) {
     return { handled: true, text: ctx.t('official.community-subgroups.unpinQuotedOnly') };
   }
   return {
@@ -354,7 +354,7 @@ async function unpinQuotedMessage(context: PluginCommandContext, ctx: CommandCon
     text: ctx.t('official.community-subgroups.unpinQueued'),
     pluginActions: [{
       type: 'message.unpin' as const,
-      messageId: ctx.message.quotedMsgId,
+      messageId: ctx.message.replyTo.messageId,
       reason: 'community subgroup member unpin request'
     }]
   };

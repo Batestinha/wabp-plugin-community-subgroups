@@ -58,7 +58,10 @@ export function createSubgroupFlowDefinition(input: {
         prompt: input.t('official.community-subgroups.flow.members'),
         nextStepId: SUBGROUP_CONFIRM_STEP_ID,
         resolveInput: ({ input: value, message }) => {
-          const participantWids = parseParticipantWids(value, message?.mentionedWids ?? []);
+          const participantWids = parseParticipantWids(
+            value,
+            [...new Set((message?.mentions ?? []).map((mention) => mention.wid))]
+          );
           return participantWids.length > 0
             ? { status: 'use-value', value: participantWids }
             : { status: 'error', reply: input.t('official.community-subgroups.flow.membersInvalid') };
