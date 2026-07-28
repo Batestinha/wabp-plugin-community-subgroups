@@ -88,8 +88,7 @@ export function createSubgroupFlowDefinition(input: {
           { label: input.t('official.community-subgroups.flow.no'), value: 'no' }
         ],
         minSelections: 1,
-        maxSelections: 1,
-        presentation: 'text'
+        maxSelections: 1
       }
     }
   };
@@ -122,8 +121,7 @@ export function createPinDurationFlowDefinition(input: {
           value: option.seconds
         })),
         minSelections: 1,
-        maxSelections: 1,
-        presentation: 'text'
+        maxSelections: 1
       }
     }
   };
