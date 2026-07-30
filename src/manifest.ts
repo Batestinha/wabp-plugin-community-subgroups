@@ -4,6 +4,8 @@ import { communitySubgroupsMessages } from './messages';
 import {
   COMMUNITY_SUBGROUPS_CREATE_METHOD,
   COMMUNITY_SUBGROUPS_CREATE_TIMEOUT_MS,
+  COMMUNITY_SUBGROUPS_RESUME_METHOD,
+  COMMUNITY_SUBGROUPS_RESUME_TIMEOUT_MS,
   COMMUNITY_SUBGROUPS_SERVICE_ID
 } from './serviceApi';
 
@@ -26,11 +28,18 @@ export const communitySubgroupsManifest: PluginManifest = {
   ],
   services: [{
     serviceId: COMMUNITY_SUBGROUPS_SERVICE_ID,
-    methods: [{
-      name: COMMUNITY_SUBGROUPS_CREATE_METHOD,
-      access: 'mutation',
-      timeoutMs: COMMUNITY_SUBGROUPS_CREATE_TIMEOUT_MS
-    }]
+    methods: [
+      {
+        name: COMMUNITY_SUBGROUPS_CREATE_METHOD,
+        access: 'mutation',
+        timeoutMs: COMMUNITY_SUBGROUPS_CREATE_TIMEOUT_MS
+      },
+      {
+        name: COMMUNITY_SUBGROUPS_RESUME_METHOD,
+        access: 'mutation',
+        timeoutMs: COMMUNITY_SUBGROUPS_RESUME_TIMEOUT_MS
+      }
+    ]
   }],
   eventSubscriptions: [],
   requiredPermissions: [],
