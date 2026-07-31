@@ -30,7 +30,9 @@ export const communitySubgroupCreateInputSchema = z.object({
 
 export const communitySubgroupCreateOutputSchema = z.object({
   created: createdGroupSchema,
-  participantCount: z.number().int().nonnegative().optional()
+  participantCount: z.number().int().nonnegative().optional(),
+  communityLinkStatus: z.enum(['linked', 'pending']),
+  communityLinkError: z.string().optional()
 }).strict();
 
 export const communitySubgroupResumeInputSchema = z.object({
@@ -39,7 +41,8 @@ export const communitySubgroupResumeInputSchema = z.object({
   description: z.string().optional(),
   participantWids: z.array(z.string().min(1)).min(1),
   participants: z.record(createdGroupParticipantResultSchema).optional(),
-  parentCommunityWid: z.string().min(1)
+  parentCommunityWid: z.string().min(1),
+  allowPendingCommunityLink: z.boolean().optional()
 }).strict();
 
 export const communitySubgroupResumeOutputSchema = communitySubgroupCreateOutputSchema;

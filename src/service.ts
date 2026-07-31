@@ -91,7 +91,10 @@ export function registerCommunitySubgroupServices(
             participantWids,
             ...(input.participants ? { participants: input.participants } : {}),
             parentCommunityWid: input.parentCommunityWid,
-            creationPolicy: config.creationPolicy
+            creationPolicy: config.creationPolicy,
+            ...(input.allowPendingCommunityLink !== undefined
+              ? { allowPendingCommunityLink: input.allowPendingCommunityLink }
+              : {})
           });
         }
       }
