@@ -26,6 +26,48 @@ export const communitySubgroupsManifest: PluginManifest = {
     '/pin',
     '/unpin'
   ],
+  help: {
+    featureId: 'subgroups',
+    titleKey: 'official.community-subgroups.help.feature.title',
+    summaryKey: 'official.community-subgroups.help.feature.summary',
+    order: 50,
+    aliases: ['subgroup', 'community group', 'child group'],
+    topics: [
+      {
+        topicId: 'create-subgroup',
+        titleKey: 'official.community-subgroups.help.create.title',
+        summaryKey: 'official.community-subgroups.help.create.summary',
+        order: 10,
+        commands: ['/subgroup create'],
+        instructionKeys: ['official.community-subgroups.help.create.instruction'],
+        exampleKeys: ['official.community-subgroups.help.create.example'],
+        keywords: ['create', 'child group', 'members'],
+        availability: { invocation: 'group_only', requiredAccessPlane: 'group_member' }
+      },
+      {
+        topicId: 'edit-subgroup',
+        titleKey: 'official.community-subgroups.help.edit.title',
+        summaryKey: 'official.community-subgroups.help.edit.summary',
+        order: 20,
+        commands: ['/title', '/description'],
+        instructionKeys: ['official.community-subgroups.help.edit.instruction'],
+        exampleKeys: ['official.community-subgroups.help.title.example'],
+        keywords: ['title', 'description', 'rename'],
+        availability: { invocation: 'group_only', requiredAccessPlane: 'group_member' }
+      },
+      {
+        topicId: 'pin-messages',
+        titleKey: 'official.community-subgroups.help.pin.title',
+        summaryKey: 'official.community-subgroups.help.pin.summary',
+        order: 30,
+        commands: ['/pin', '/unpin'],
+        instructionKeys: ['official.community-subgroups.help.pin.instruction'],
+        exampleKeys: ['official.community-subgroups.help.pin.example'],
+        keywords: ['pin', 'unpin', 'message'],
+        availability: { invocation: 'group_only', requiredAccessPlane: 'group_member' }
+      }
+    ]
+  },
   services: [{
     serviceId: COMMUNITY_SUBGROUPS_SERVICE_ID,
     methods: [

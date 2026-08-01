@@ -64,31 +64,41 @@ export function registerCommunitySubgroupCommands(context: PluginCommandContext)
   router.register('subgroup', 'create', commandMetadata({
     auditAction: 'community_subgroups.create',
     usage: '/subgroup create',
-    descriptionKey: 'official.community-subgroups.help.create'
+    descriptionKey: 'official.community-subgroups.help.create',
+    topicId: 'create-subgroup',
+    exampleKey: 'official.community-subgroups.help.create.example'
   }), async (ctx) => startCreateFlow(context, ctx));
 
   router.register('title', '*', commandMetadata({
     auditAction: 'community_subgroups.title',
     usage: '/title new group title',
-    descriptionKey: 'official.community-subgroups.help.title'
+    descriptionKey: 'official.community-subgroups.help.title',
+    topicId: 'edit-subgroup',
+    exampleKey: 'official.community-subgroups.help.title.example'
   }), async (ctx) => updateTitle(context, ctx));
 
   router.register('description', '*', commandMetadata({
     auditAction: 'community_subgroups.description',
     usage: '/description new group description',
-    descriptionKey: 'official.community-subgroups.help.description'
+    descriptionKey: 'official.community-subgroups.help.description',
+    topicId: 'edit-subgroup',
+    exampleKey: 'official.community-subgroups.help.description.example'
   }), async (ctx) => updateDescription(context, ctx));
 
   router.register('pin', '*', commandMetadata({
     auditAction: 'community_subgroups.pin',
     usage: '/pin',
-    descriptionKey: 'official.community-subgroups.help.pin'
+    descriptionKey: 'official.community-subgroups.help.pin',
+    topicId: 'pin-messages',
+    exampleKey: 'official.community-subgroups.help.pin.example'
   }), async (ctx) => startPinDurationFlow(context, ctx));
 
   router.register('unpin', '*', commandMetadata({
     auditAction: 'community_subgroups.unpin',
     usage: '/unpin',
-    descriptionKey: 'official.community-subgroups.help.unpin'
+    descriptionKey: 'official.community-subgroups.help.unpin',
+    topicId: 'pin-messages',
+    exampleKey: 'official.community-subgroups.help.unpin.example'
   }), async (ctx) => unpinQuotedMessage(context, ctx));
 }
 
@@ -371,6 +381,8 @@ function commandMetadata(input: {
   auditAction: string;
   usage: string;
   descriptionKey: string;
+  topicId: 'create-subgroup' | 'edit-subgroup' | 'pin-messages';
+  exampleKey: string;
 }): CommandMetadata {
   return {
     ...GROUP_MEMBER_COMMAND,
@@ -379,8 +391,12 @@ function commandMetadata(input: {
     auditAction: input.auditAction,
     help: {
       familyKey: 'official.community-subgroups.help.family',
+      featureId: 'subgroups',
+      topicId: input.topicId,
       descriptionKey: input.descriptionKey,
-      usage: input.usage
+      usage: input.usage,
+      exampleKeys: [input.exampleKey],
+      keywords: ['community', 'subgroup', input.topicId]
     },
     assistant: {
       intentTags: input.usage.replace(/^\//, '').split(/\s+/).filter(Boolean),
