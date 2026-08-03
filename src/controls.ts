@@ -76,11 +76,11 @@ export const communitySubgroupsControls: ControlDescriptor[] = [
     type: 'enum',
     enum: DISAPPEARING_MESSAGES_OPTIONS
   }, { widget: 'select', options: DISAPPEARING_MESSAGES_OPTIONS }, 'New subgroup defaults'),
-  control('creationPolicy.parentGroupCreatePermission', 'Who can create groups', 'Choose who can create groups in the parent community before creating a subgroup.', 200, {
+  control('creationPolicy.parentGroupCreatePermission', 'Who can create groups', 'Choose who can create groups in the parent community.', 200, {
     type: 'enum',
     enum: COMMUNITY_PERMISSION_OPTIONS
   }, { widget: 'select', options: COMMUNITY_PERMISSION_OPTIONS }, 'Parent community defaults'),
-  control('creationPolicy.parentMemberAddPermission', 'Who can add members', 'Choose who can add new members to the parent community before creating a subgroup.', 210, {
+  control('creationPolicy.parentMemberAddPermission', 'Who can add members', 'Choose who can add new members to the parent community.', 210, {
     type: 'enum',
     enum: COMMUNITY_PERMISSION_OPTIONS
   }, { widget: 'select', options: COMMUNITY_PERMISSION_OPTIONS }, 'Parent community defaults')
