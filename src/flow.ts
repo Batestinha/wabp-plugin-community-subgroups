@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { FlowDefinition } from '../../../adminBot/flows/flowTypes';
 import type { FlowSessionSnapshot } from '../../../adminBot/flows/flowEngine';
 import type { TranslateFn } from '../../../platform/i18n';
+import { identityAddressFromPhone } from '../../../platform/identity/identityAddressService';
 
 export const SUBGROUP_CONFIRM_STEP_ID = 'confirm';
 export const PIN_DURATION_STEP_ID = 'duration';
@@ -191,7 +192,7 @@ function normalizeParticipantToken(raw: string): string[] {
   }
   const digits = token.replace(/[^\d]/g, '');
   if (digits.length >= 7 && digits.length <= 15) {
-    return [`${digits}@c.us`];
+    return [identityAddressFromPhone(digits)!];
   }
   return [];
 }
@@ -200,7 +201,7 @@ function phoneWidsFromSpacedInternationalNumbers(input: string): string[] {
   const matches = input.match(/\+\s*\d(?:[\d\s().-]{5,}\d)/g) ?? [];
   return matches.flatMap((match) => {
     const digits = match.replace(/[^\d]/g, '');
-    return digits.length >= 7 && digits.length <= 15 ? [`${digits}@c.us`] : [];
+    return digits.length >= 7 && digits.length <= 15 ? [identityAddressFromPhone(digits)!] : [];
   });
 }
 
