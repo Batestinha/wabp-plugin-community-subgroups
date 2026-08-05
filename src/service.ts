@@ -33,22 +33,21 @@ export function registerCommunitySubgroupServices(
           if (!createManagedCommunitySubgroup) {
             throw new Error('Managed community subgroup creation is unavailable in this runtime.');
           }
-          if (!call.actorWid) {
+          if (!call.actorIdentityId) {
             throw new Error('Managed community subgroup creation requires an actor.');
           }
 
-          const config = parseCommunitySubgroupsConfig(await context.configFor(call.scopeId, call.actorWid));
+          const config = parseCommunitySubgroupsConfig(await context.configFor(call.scopeId, call.actorIdentityId));
           if (!config.enabled) {
             throw new Error('official.community-subgroups is disabled for this scope.');
           }
-          const participantWids = unique(input.participantWids);
+          const participantWids = await resolvedParticipantDeliveryAddresses(context, input.participantWids);
           if (participantWids.length > config.maxParticipants) {
             throw new Error(`member count exceeds configured maximum ${config.maxParticipants}`);
           }
 
           return createManagedCommunitySubgroup({
             scopeId: call.scopeId,
-            actorWid: call.actorWid,
             title: input.title,
             ...(input.description ? { description: input.description } : {}),
             participantWids,
@@ -69,22 +68,21 @@ export function registerCommunitySubgroupServices(
           if (!resumeManagedSubgroup) {
             throw new Error('Managed community subgroup resumption is unavailable in this runtime.');
           }
-          if (!call.actorWid) {
+          if (!call.actorIdentityId) {
             throw new Error('Managed community subgroup resumption requires an actor.');
           }
 
-          const config = parseCommunitySubgroupsConfig(await context.configFor(call.scopeId, call.actorWid));
+          const config = parseCommunitySubgroupsConfig(await context.configFor(call.scopeId, call.actorIdentityId));
           if (!config.enabled) {
             throw new Error('official.community-subgroups is disabled for this scope.');
           }
-          const participantWids = unique(input.participantWids);
+          const participantWids = await resolvedParticipantDeliveryAddresses(context, input.participantWids);
           if (participantWids.length > config.maxParticipants) {
             throw new Error(`member count exceeds configured maximum ${config.maxParticipants}`);
           }
 
           return resumeManagedSubgroup({
             scopeId: call.scopeId,
-            actorWid: call.actorWid,
             chatId: input.chatId,
             title: input.title,
             ...(input.description ? { description: input.description } : {}),
@@ -99,6 +97,19 @@ export function registerCommunitySubgroupServices(
   }];
 }
 
-function unique(values: string[]): string[] {
-  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+async function resolvedParticipantDeliveryAddresses(
+  context: PluginServiceRegistrationContext,
+  references: string[]
+): Promise<string[]> {
+  const resolveIdentityReference = context.resolveIdentityReference;
+  if (!resolveIdentityReference) {
+    throw new Error('Authoritative identity reference resolution is unavailable in this runtime.');
+  }
+  const identities = await Promise.all(
+    [...new Set(references.map((reference) => reference.trim()).filter(Boolean))]
+      .map((reference) => resolveIdentityReference(reference))
+  );
+  return [...new Map(
+    identities.map((identity) => [identity.identityId, identity.deliveryChatId])
+  ).values()];
 }

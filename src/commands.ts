@@ -2,6 +2,7 @@ import type { CommandMetadata } from '../../../adminBot/router/commandMetadata';
 import type { CommandContext } from '../../../adminBot/router/commandRouter';
 import { logger } from '../../../platform/logging/logger';
 import type { PluginCommandContext } from '../../../platform/pluginRuntime/types';
+import { requireStableIdentityAddress } from '../../../platform/identity/messageActor';
 import { requireOfficialCommandRuntime, requireScopeId } from '../shared';
 import { parseCommunitySubgroupsConfig } from './config';
 import type { CommunitySubgroupCreationPolicy } from './creationPolicy';
@@ -21,6 +22,11 @@ import {
   COMMUNITY_SUBGROUPS_SERVICE_ID,
   type CommunitySubgroupCreateOutput
 } from './serviceApi';
+import {
+  EVENT_SUBGROUP_OWNERSHIP_RESOLVE_METHOD,
+  EVENT_SUBGROUP_OWNERSHIP_SERVICE_ID,
+  type EventSubgroupOwnershipResolveOutput
+} from '../community-events/serviceApi';
 
 interface SubgroupDraft {
   flowSessionId: string;
@@ -29,6 +35,7 @@ interface SubgroupDraft {
   groupId?: string | undefined;
   groupWid?: string | undefined;
   chatId: string;
+  actorIdentityId: string;
   actorWid: string;
   parentCommunityWid: string;
   creationPolicy: CommunitySubgroupCreationPolicy;
@@ -105,7 +112,8 @@ export function registerCommunitySubgroupCommands(context: PluginCommandContext)
 async function startCreateFlow(context: PluginCommandContext, ctx: CommandContext) {
   const runtime = requireOfficialCommandRuntime(context);
   const scopeId = requireScopeId(ctx);
-  const config = parseCommunitySubgroupsConfig(await runtime.configFor(scopeId, ctx.message.senderWid));
+  const actor = subgroupCommandActor(ctx);
+  const config = parseCommunitySubgroupsConfig(await runtime.configFor(scopeId, actor.identityId));
   if (!config.enabled) {
     return { handled: true, text: ctx.t('official.community-subgroups.disabled') };
   }
@@ -128,7 +136,8 @@ async function startCreateFlow(context: PluginCommandContext, ctx: CommandContex
     ...(ctx.groupId ? { groupId: ctx.groupId } : {}),
     ...(ctx.groupWid ? { groupWid: ctx.groupWid } : {}),
     chatId: ctx.message.chatId,
-    actorWid: ctx.actor?.wid ?? ctx.message.senderWid,
+    actorIdentityId: actor.identityId,
+    actorWid: actor.canonicalWid,
     parentCommunityWid,
     creationPolicy: config.creationPolicy,
     maxParticipants: config.maxParticipants
@@ -165,19 +174,26 @@ function registerSubgroupFlowCompletionHandler(
       await activeTransport.sendText(draft.chatId, t('official.community-subgroups.create.invalid'));
       return true;
     }
-    const participantWids = unique([draft.actorWid, ...answers.participantWids]);
-    if (participantWids.length > draft.maxParticipants) {
-      await activeTransport.sendText(draft.chatId, t('official.community-subgroups.create.failed', {
-        reason: `member count exceeds configured maximum ${draft.maxParticipants}`
-      }));
-      return true;
-    }
     try {
+      const resolveIdentityReference = context.resolveIdentityReference;
+      if (!resolveIdentityReference) {
+        throw new Error('Authoritative identity reference resolution is unavailable in this runtime.');
+      }
+      const participantIdentities = await Promise.all(
+        unique([draft.actorWid, ...answers.participantReferences])
+          .map((reference) => resolveIdentityReference(reference))
+      );
+      const participantWids = [...new Map(
+        participantIdentities.map((identity) => [identity.identityId, identity.deliveryChatId])
+      ).values()];
+      if (participantWids.length > draft.maxParticipants) {
+        throw new Error(`member count exceeds configured maximum ${draft.maxParticipants}`);
+      }
       const result = await context.services.call<CommunitySubgroupCreateOutput>({
         serviceId: COMMUNITY_SUBGROUPS_SERVICE_ID,
         method: COMMUNITY_SUBGROUPS_CREATE_METHOD,
         scopeId: draft.scopeId,
-        actorWid: draft.actorWid,
+        actorIdentityId: draft.actorIdentityId,
         ...(draft.groupId ? { groupId: draft.groupId } : {}),
         ...(draft.groupWid ? { groupWid: draft.groupWid } : {}),
         input: {
@@ -209,16 +225,21 @@ async function updateTitle(context: PluginCommandContext, ctx: CommandContext) {
     return { handled: true, text: ctx.t('official.community-subgroups.childOnly') };
   }
   const subject = ctx.command.rawArgs.trim();
-  const delegated = await context.handleGroupTitleChangeIntent?.({
-    sourcePluginId: COMMUNITY_SUBGROUPS_PLUGIN_ID,
-    requestedTitle: subject,
-    commandContext: ctx
-  });
-  if (delegated) {
-    return delegated;
-  }
   if (!subject) {
     return { handled: true, text: ctx.t('official.community-subgroups.titleUsage') };
+  }
+  const ownership = await resolveEventSubgroupOwnership(context, ctx);
+  if (ownership.kind === 'owned') {
+    return {
+      handled: true,
+      text: ctx.t('official.community-events.titleManaged', { eventId: ownership.eventId })
+    };
+  }
+  if (ownership.kind === 'ambiguous') {
+    return { handled: true, text: ctx.t('official.community-events.titleManagedAmbiguous') };
+  }
+  if (ownership.kind === 'unavailable') {
+    return { handled: true, text: ctx.t('official.community-events.titleOwnershipUnavailable') };
   }
   return {
     handled: true,
@@ -230,6 +251,35 @@ async function updateTitle(context: PluginCommandContext, ctx: CommandContext) {
       reason: 'community subgroup member title update'
     }]
   };
+}
+
+async function resolveEventSubgroupOwnership(
+  context: PluginCommandContext,
+  ctx: CommandContext
+): Promise<EventSubgroupOwnershipResolveOutput | { kind: 'unavailable' }> {
+  if (!context.services) {
+    return { kind: 'unavailable' };
+  }
+  const scopeId = requireScopeId(ctx);
+  try {
+    return await context.services.call<EventSubgroupOwnershipResolveOutput>({
+      serviceId: EVENT_SUBGROUP_OWNERSHIP_SERVICE_ID,
+      method: EVENT_SUBGROUP_OWNERSHIP_RESOLVE_METHOD,
+      scopeId,
+      actorIdentityId: subgroupCommandActor(ctx).identityId,
+      ...(ctx.groupId ? { groupId: ctx.groupId } : {}),
+      groupWid: ctx.groupWid!,
+      managementMode: ctx.managementMode,
+      input: { subgroupChatId: ctx.groupWid! }
+    });
+  } catch (error) {
+    logger.warn({
+      error,
+      scopeId,
+      subgroupChatId: ctx.groupWid
+    }, 'Unable to resolve event ownership before subgroup title update');
+    return { kind: 'unavailable' };
+  }
 }
 
 async function updateDescription(context: PluginCommandContext, ctx: CommandContext) {
@@ -258,7 +308,7 @@ async function updateDescription(context: PluginCommandContext, ctx: CommandCont
 async function startPinDurationFlow(context: PluginCommandContext, ctx: CommandContext) {
   const runtime = requireOfficialCommandRuntime(context);
   const scopeId = requireScopeId(ctx);
-  const config = parseCommunitySubgroupsConfig(await runtime.configFor(scopeId, ctx.message.senderWid));
+  const config = parseCommunitySubgroupsConfig(await runtime.configFor(scopeId, subgroupCommandActor(ctx).identityId));
   if (!config.enabled) {
     return { handled: true, text: ctx.t('official.community-subgroups.disabled') };
   }
@@ -373,7 +423,7 @@ async function unpinQuotedMessage(context: PluginCommandContext, ctx: CommandCon
 async function scopedConfigEnabled(context: PluginCommandContext, ctx: CommandContext): Promise<boolean> {
   const runtime = requireOfficialCommandRuntime(context);
   const scopeId = requireScopeId(ctx);
-  const config = parseCommunitySubgroupsConfig(await runtime.configFor(scopeId, ctx.message.senderWid));
+  const config = parseCommunitySubgroupsConfig(await runtime.configFor(scopeId, subgroupCommandActor(ctx).identityId));
   return config.enabled;
 }
 
@@ -404,6 +454,13 @@ function commandMetadata(input: {
       requiresConfirmation: true
     }
   };
+}
+
+function subgroupCommandActor(ctx: CommandContext) {
+  if (!ctx.actor) {
+    throw new Error('Community subgroup commands require an authoritative message actor.');
+  }
+  return requireStableIdentityAddress(ctx.actor);
 }
 
 async function resolveParentCommunityWid(

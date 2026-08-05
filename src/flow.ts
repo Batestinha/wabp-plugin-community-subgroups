@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto';
 import type { FlowDefinition } from '../../../adminBot/flows/flowTypes';
 import type { FlowSessionSnapshot } from '../../../adminBot/flows/flowEngine';
 import type { TranslateFn } from '../../../platform/i18n';
-import { identityAddressFromPhone } from '../../../platform/identity/identityAddressService';
 
 export const SUBGROUP_CONFIRM_STEP_ID = 'confirm';
 export const PIN_DURATION_STEP_ID = 'duration';
@@ -16,7 +15,7 @@ export const PIN_DURATION_OPTIONS = [
 export interface SubgroupFlowAnswers {
   title: string;
   description?: string | undefined;
-  participantWids: string[];
+  participantReferences: string[];
 }
 
 export function createSubgroupFlowDefinition(input: {
@@ -59,12 +58,12 @@ export function createSubgroupFlowDefinition(input: {
         prompt: input.t('official.community-subgroups.flow.members'),
         nextStepId: SUBGROUP_CONFIRM_STEP_ID,
         resolveInput: ({ input: value, message }) => {
-          const participantWids = parseParticipantWids(
+          const participantReferences = parseParticipantReferences(
             value,
             [...new Set((message?.mentions ?? []).map((mention) => mention.wid))]
           );
-          return participantWids.length > 0
-            ? { status: 'use-value', value: participantWids }
+          return participantReferences.length > 0
+            ? { status: 'use-value', value: participantReferences }
             : { status: 'error', reply: input.t('official.community-subgroups.flow.membersInvalid') };
         }
       },
@@ -81,7 +80,7 @@ export function createSubgroupFlowDefinition(input: {
           return input.t('official.community-subgroups.flow.confirm', {
             title: answers?.title ?? '',
             description: answers?.description || 'none',
-            memberCount: String(answers?.participantWids.length ?? 0)
+            memberCount: String(answers?.participantReferences.length ?? 0)
           });
         },
         options: [
@@ -158,27 +157,27 @@ export function pinDurationLabel(seconds: number, t: TranslateFn): string {
   return option ? t(option.labelKey) : `${seconds} seconds`;
 }
 
-export function parseParticipantWids(input: string, mentionedWids: string[] = []): string[] {
-  const spacedPhoneWids = phoneWidsFromSpacedInternationalNumbers(input);
-  const tokenWids = input
+export function parseParticipantReferences(input: string, mentionedWids: string[] = []): string[] {
+  const spacedPhoneReferences = phoneReferencesFromSpacedInternationalNumbers(input);
+  const tokenReferences = input
     .split(/[\s,;]+/)
     .flatMap((token) => normalizeParticipantToken(token));
-  return unique([...mentionedWids, ...tokenWids, ...spacedPhoneWids]);
+  return unique([...mentionedWids, ...tokenReferences, ...spacedPhoneReferences]);
 }
 
 function subgroupFlowAnswersFromData(data: Record<string, unknown>): SubgroupFlowAnswers | undefined {
   const title = typeof data.title === 'string' ? data.title.trim() : '';
   const description = typeof data.description === 'string' ? data.description.trim() : '';
-  const participantWids = Array.isArray(data.members)
+  const participantReferences = Array.isArray(data.members)
     ? data.members.flatMap((value) => (typeof value === 'string' ? [value] : []))
     : [];
-  if (!title || participantWids.length === 0) {
+  if (!title || participantReferences.length === 0) {
     return undefined;
   }
   return {
     title,
     ...(description ? { description } : {}),
-    participantWids: unique(participantWids)
+    participantReferences: unique(participantReferences)
   };
 }
 
@@ -187,21 +186,21 @@ function normalizeParticipantToken(raw: string): string[] {
   if (!token) {
     return [];
   }
-  if (/^[A-Za-z0-9._-]+@(c\.us|lid)$/.test(token)) {
+  if (/^[A-Za-z0-9._-]+@(c\.us|s\.whatsapp\.net|lid)$/.test(token)) {
     return [token];
   }
   const digits = token.replace(/[^\d]/g, '');
   if (digits.length >= 7 && digits.length <= 15) {
-    return [identityAddressFromPhone(digits)!];
+    return [`+${digits}`];
   }
   return [];
 }
 
-function phoneWidsFromSpacedInternationalNumbers(input: string): string[] {
+function phoneReferencesFromSpacedInternationalNumbers(input: string): string[] {
   const matches = input.match(/\+\s*\d(?:[\d\s().-]{5,}\d)/g) ?? [];
   return matches.flatMap((match) => {
     const digits = match.replace(/[^\d]/g, '');
-    return digits.length >= 7 && digits.length <= 15 ? [identityAddressFromPhone(digits)!] : [];
+    return digits.length >= 7 && digits.length <= 15 ? [`+${digits}`] : [];
   });
 }
 
