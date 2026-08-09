@@ -5,7 +5,6 @@ import type { PluginCommandContext } from '../../../platform/pluginRuntime/types
 import { requireStableIdentityAddress } from '../../../platform/identity/messageActor';
 import { requireOfficialCommandRuntime, requireScopeId } from '../shared';
 import { parseCommunitySubgroupsConfig } from './config';
-import type { CommunitySubgroupCreationPolicy } from './creationPolicy';
 import {
   createPinDurationFlowDefinition,
   createSubgroupFlowDefinition,
@@ -18,9 +17,13 @@ import {
 } from './flow';
 import { COMMUNITY_SUBGROUPS_PLUGIN_ID } from './manifest';
 import {
-  COMMUNITY_SUBGROUPS_CREATE_METHOD,
+  COMMUNITY_SUBGROUPS_CANDIDATE_METHOD,
+  COMMUNITY_SUBGROUPS_COMPLETE_METHOD,
+  COMMUNITY_SUBGROUPS_CONFIGURE_METHOD,
   COMMUNITY_SUBGROUPS_SERVICE_ID,
-  type CommunitySubgroupCreateOutput
+  type CommunitySubgroupCandidateOutput,
+  type CommunitySubgroupCompleteOutput,
+  type CommunitySubgroupConfigureOutput
 } from './serviceApi';
 import {
   EVENT_SUBGROUP_OWNERSHIP_RESOLVE_METHOD,
@@ -38,8 +41,6 @@ interface SubgroupDraft {
   actorIdentityId: string;
   actorWid: string;
   parentCommunityWid: string;
-  creationPolicy: CommunitySubgroupCreationPolicy;
-  maxParticipants: number;
 }
 
 interface PinDraft {
@@ -138,9 +139,7 @@ async function startCreateFlow(context: PluginCommandContext, ctx: CommandContex
     chatId: ctx.message.chatId,
     actorIdentityId: actor.identityId,
     actorWid: actor.canonicalWid,
-    parentCommunityWid,
-    creationPolicy: config.creationPolicy,
-    maxParticipants: config.maxParticipants
+    parentCommunityWid
   };
   await runtime.dataStore.set(subgroupDraftKey(scopeId, flowSessionId), draft);
   return { handled: true, text: ctx.t('official.community-subgroups.create.started') };
@@ -175,33 +174,46 @@ function registerSubgroupFlowCompletionHandler(
       return true;
     }
     try {
-      const resolveIdentityReference = context.resolveIdentityReference;
-      if (!resolveIdentityReference) {
-        throw new Error('Authoritative identity reference resolution is unavailable in this runtime.');
-      }
-      const participantIdentities = await Promise.all(
-        unique([draft.actorWid, ...answers.participantReferences])
-          .map((reference) => resolveIdentityReference(reference))
-      );
-      const participantWids = [...new Map(
-        participantIdentities.map((identity) => [identity.identityId, identity.deliveryChatId])
-      ).values()];
-      if (participantWids.length > draft.maxParticipants) {
-        throw new Error(`member count exceeds configured maximum ${draft.maxParticipants}`);
-      }
-      const result = await context.services.call<CommunitySubgroupCreateOutput>({
+      // Carry stable identity references through candidate creation and linking.
+      // The platform completion operation owns authoritative address resolution
+      // and records individual failures after the community link is confirmed.
+      const participantWids = unique([draft.actorWid, ...answers.participantReferences]);
+      const serviceContext = {
         serviceId: COMMUNITY_SUBGROUPS_SERVICE_ID,
-        method: COMMUNITY_SUBGROUPS_CREATE_METHOD,
         scopeId: draft.scopeId,
         actorIdentityId: draft.actorIdentityId,
         ...(draft.groupId ? { groupId: draft.groupId } : {}),
-        ...(draft.groupWid ? { groupWid: draft.groupWid } : {}),
+        ...(draft.groupWid ? { groupWid: draft.groupWid } : {})
+      };
+      const candidate = await context.services.call<CommunitySubgroupCandidateOutput>({
+        ...serviceContext,
+        method: COMMUNITY_SUBGROUPS_CANDIDATE_METHOD,
         input: {
           title: answers.title,
+          parentCommunityWid: draft.parentCommunityWid
+        }
+      });
+      await context.services.call<CommunitySubgroupConfigureOutput>({
+        ...serviceContext,
+        method: COMMUNITY_SUBGROUPS_CONFIGURE_METHOD,
+        input: {
+          chatId: candidate.created.chatId,
+          title: candidate.created.title,
+          ...(answers.description ? { description: answers.description } : {}),
+          participants: candidate.created.participants,
+          parentCommunityWid: draft.parentCommunityWid
+        }
+      });
+      const result = await context.services.call<CommunitySubgroupCompleteOutput>({
+        ...serviceContext,
+        method: COMMUNITY_SUBGROUPS_COMPLETE_METHOD,
+        input: {
+          chatId: candidate.created.chatId,
+          title: candidate.created.title,
           ...(answers.description ? { description: answers.description } : {}),
           participantWids,
-          parentCommunityWid: draft.parentCommunityWid,
-          creationPolicy: draft.creationPolicy
+          participants: candidate.created.participants,
+          parentCommunityWid: draft.parentCommunityWid
         }
       });
       await activeTransport.sendText(draft.chatId, t('official.community-subgroups.create.created', {

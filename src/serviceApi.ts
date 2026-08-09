@@ -1,11 +1,12 @@
 import { z } from 'zod';
-import { communitySubgroupCreationPolicySchema } from './creationPolicy';
 
 export const COMMUNITY_SUBGROUPS_SERVICE_ID = 'official.community-subgroups.v1';
-export const COMMUNITY_SUBGROUPS_CREATE_METHOD = 'createManagedSubgroup';
-export const COMMUNITY_SUBGROUPS_CREATE_TIMEOUT_MS = 120_000;
-export const COMMUNITY_SUBGROUPS_RESUME_METHOD = 'resumeManagedSubgroup';
-export const COMMUNITY_SUBGROUPS_RESUME_TIMEOUT_MS = 120_000;
+export const COMMUNITY_SUBGROUPS_CANDIDATE_METHOD = 'createManagedSubgroupCandidate';
+export const COMMUNITY_SUBGROUPS_CANDIDATE_TIMEOUT_MS = 120_000;
+export const COMMUNITY_SUBGROUPS_CONFIGURE_METHOD = 'configureManagedSubgroup';
+export const COMMUNITY_SUBGROUPS_CONFIGURE_TIMEOUT_MS = 120_000;
+export const COMMUNITY_SUBGROUPS_COMPLETE_METHOD = 'completeManagedSubgroup';
+export const COMMUNITY_SUBGROUPS_COMPLETE_TIMEOUT_MS = 120_000;
 
 const createdGroupParticipantResultSchema = z.object({
   statusCode: z.number().int().optional(),
@@ -20,31 +21,48 @@ const createdGroupSchema = z.object({
   participants: z.record(createdGroupParticipantResultSchema)
 }).strict();
 
-export const communitySubgroupCreateInputSchema = z.object({
+const createdGroupCandidateSchema = createdGroupSchema.extend({
+  intendedParentCommunityJid: z.string().min(1)
+}).strict();
+
+export const communitySubgroupCandidateInputSchema = z.object({
   title: z.string().min(1),
-  description: z.string().optional(),
-  participantWids: z.array(z.string().min(1)).min(1),
-  parentCommunityWid: z.string().min(1),
-  creationPolicy: communitySubgroupCreationPolicySchema.optional()
+  parentCommunityWid: z.string().min(1)
 }).strict();
 
-export const communitySubgroupCreateOutputSchema = z.object({
-  created: createdGroupSchema,
-  participantCount: z.number().int().nonnegative().optional()
+export const communitySubgroupCandidateOutputSchema = z.object({
+  created: createdGroupCandidateSchema
 }).strict();
 
-export const communitySubgroupResumeInputSchema = z.object({
+export const communitySubgroupConfigureInputSchema = z.object({
   chatId: z.string().min(1),
   title: z.string().min(1),
   description: z.string().optional(),
-  participantWids: z.array(z.string().min(1)).min(1),
   participants: z.record(createdGroupParticipantResultSchema).optional(),
   parentCommunityWid: z.string().min(1)
 }).strict();
 
-export const communitySubgroupResumeOutputSchema = communitySubgroupCreateOutputSchema;
+export const communitySubgroupConfigureOutputSchema = z.object({
+  created: createdGroupSchema
+}).strict();
 
-export type CommunitySubgroupCreateInput = z.infer<typeof communitySubgroupCreateInputSchema>;
-export type CommunitySubgroupCreateOutput = z.infer<typeof communitySubgroupCreateOutputSchema>;
-export type CommunitySubgroupResumeInput = z.infer<typeof communitySubgroupResumeInputSchema>;
-export type CommunitySubgroupResumeOutput = z.infer<typeof communitySubgroupResumeOutputSchema>;
+export const communitySubgroupCompleteOutputSchema = z.object({
+  created: createdGroupSchema,
+  participantCount: z.number().int().nonnegative().optional()
+}).strict();
+
+export const communitySubgroupCompleteInputSchema = z.object({
+  chatId: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().optional(),
+  participantWids: z.array(z.string().min(1)),
+  participants: z.record(createdGroupParticipantResultSchema).optional(),
+  parentCommunityWid: z.string().min(1)
+}).strict();
+
+export type CommunitySubgroupCandidateInput = z.infer<typeof communitySubgroupCandidateInputSchema>;
+export type CommunitySubgroupCandidateOutput = z.infer<typeof communitySubgroupCandidateOutputSchema>;
+export type CommunitySubgroupConfigureInput = z.infer<typeof communitySubgroupConfigureInputSchema>;
+export type CommunitySubgroupConfigureOutput = z.infer<typeof communitySubgroupConfigureOutputSchema>;
+export type CommunitySubgroupCompleteInput = z.infer<typeof communitySubgroupCompleteInputSchema>;
+export type CommunitySubgroupCompleteOutput = z.infer<typeof communitySubgroupCompleteOutputSchema>;

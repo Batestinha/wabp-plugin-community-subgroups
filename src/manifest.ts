@@ -2,10 +2,12 @@ import type { PluginManifest } from '../../../platform/pluginRuntime/manifest';
 import { communitySubgroupsConfigSchema } from './config';
 import { communitySubgroupsMessages } from './messages';
 import {
-  COMMUNITY_SUBGROUPS_CREATE_METHOD,
-  COMMUNITY_SUBGROUPS_CREATE_TIMEOUT_MS,
-  COMMUNITY_SUBGROUPS_RESUME_METHOD,
-  COMMUNITY_SUBGROUPS_RESUME_TIMEOUT_MS,
+  COMMUNITY_SUBGROUPS_CANDIDATE_METHOD,
+  COMMUNITY_SUBGROUPS_CANDIDATE_TIMEOUT_MS,
+  COMMUNITY_SUBGROUPS_CONFIGURE_METHOD,
+  COMMUNITY_SUBGROUPS_CONFIGURE_TIMEOUT_MS,
+  COMMUNITY_SUBGROUPS_COMPLETE_METHOD,
+  COMMUNITY_SUBGROUPS_COMPLETE_TIMEOUT_MS,
   COMMUNITY_SUBGROUPS_SERVICE_ID
 } from './serviceApi';
 
@@ -72,14 +74,19 @@ export const communitySubgroupsManifest: PluginManifest = {
     serviceId: COMMUNITY_SUBGROUPS_SERVICE_ID,
     methods: [
       {
-        name: COMMUNITY_SUBGROUPS_CREATE_METHOD,
+        name: COMMUNITY_SUBGROUPS_CANDIDATE_METHOD,
         access: 'mutation',
-        timeoutMs: COMMUNITY_SUBGROUPS_CREATE_TIMEOUT_MS
+        timeoutMs: COMMUNITY_SUBGROUPS_CANDIDATE_TIMEOUT_MS
       },
       {
-        name: COMMUNITY_SUBGROUPS_RESUME_METHOD,
+        name: COMMUNITY_SUBGROUPS_CONFIGURE_METHOD,
         access: 'mutation',
-        timeoutMs: COMMUNITY_SUBGROUPS_RESUME_TIMEOUT_MS
+        timeoutMs: COMMUNITY_SUBGROUPS_CONFIGURE_TIMEOUT_MS
+      },
+      {
+        name: COMMUNITY_SUBGROUPS_COMPLETE_METHOD,
+        access: 'mutation',
+        timeoutMs: COMMUNITY_SUBGROUPS_COMPLETE_TIMEOUT_MS
       }
     ]
   }],
