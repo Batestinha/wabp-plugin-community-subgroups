@@ -44,7 +44,7 @@ export function registerCommunitySubgroupServices(
           if (!createCandidate) {
             throw new Error('Managed community subgroup candidate creation is unavailable in this runtime.');
           }
-          if (!call.actorIdentityId || !call.actorWid) {
+          if (!call.actorIdentityId) {
             throw new Error('Managed community subgroup candidate creation requires an actor.');
           }
           const config = parseCommunitySubgroupsConfig(
@@ -57,7 +57,7 @@ export function registerCommunitySubgroupServices(
             scopeId: call.scopeId,
             title: input.title,
             parentCommunityWid: input.parentCommunityWid,
-            creatorWid: call.actorWid
+            creatorIdentityId: call.actorIdentityId
           });
         }
       },
@@ -74,9 +74,10 @@ export function registerCommunitySubgroupServices(
           if (!reconcileCreator) {
             throw new Error('Managed community subgroup creator reconciliation is unavailable in this runtime.');
           }
-          if (!call.actorIdentityId || !call.actorWid) {
+          if (!call.actorIdentityId) {
             throw new Error('Managed community subgroup creator reconciliation requires an actor.');
           }
+          assertRequiredCreatorActor(input.requiredCreator.identityId, call.actorIdentityId);
           const config = parseCommunitySubgroupsConfig(
             await context.configFor(call.scopeId, call.actorIdentityId)
           );
@@ -87,7 +88,7 @@ export function registerCommunitySubgroupServices(
             scopeId: call.scopeId,
             chatId: input.chatId,
             title: input.title,
-            creatorWid: call.actorWid,
+            requiredCreator: input.requiredCreator,
             ...(input.participants ? { participants: input.participants } : {}),
             parentCommunityWid: input.parentCommunityWid
           });
@@ -109,6 +110,7 @@ export function registerCommunitySubgroupServices(
           if (!call.actorIdentityId) {
             throw new Error('Managed community subgroup configuration requires an actor.');
           }
+          assertRequiredCreatorActor(input.requiredCreator.identityId, call.actorIdentityId);
           const config = parseCommunitySubgroupsConfig(
             await context.configFor(call.scopeId, call.actorIdentityId)
           );
@@ -119,6 +121,7 @@ export function registerCommunitySubgroupServices(
             scopeId: call.scopeId,
             chatId: input.chatId,
             title: input.title,
+            requiredCreator: input.requiredCreator,
             ...(input.description ? { description: input.description } : {}),
             ...(input.participants ? { participants: input.participants } : {}),
             parentCommunityWid: input.parentCommunityWid,
@@ -139,9 +142,10 @@ export function registerCommunitySubgroupServices(
           if (!completeManagedCommunitySubgroup) {
             throw new Error('Managed community subgroup completion is unavailable in this runtime.');
           }
-          if (!call.actorIdentityId || !call.actorWid) {
+          if (!call.actorIdentityId) {
             throw new Error('Managed community subgroup completion requires an actor.');
           }
+          assertRequiredCreatorActor(input.requiredCreator.identityId, call.actorIdentityId);
 
           const config = parseCommunitySubgroupsConfig(await context.configFor(call.scopeId, call.actorIdentityId));
           if (!config.enabled) {
@@ -168,7 +172,7 @@ export function registerCommunitySubgroupServices(
             scopeId: call.scopeId,
             chatId: input.chatId,
             title: input.title,
-            creatorWid: call.actorWid,
+            requiredCreator: input.requiredCreator,
             ...(input.description ? { description: input.description } : {}),
             participantWids: attemptedParticipantWids,
             participants: {
@@ -186,4 +190,15 @@ export function registerCommunitySubgroupServices(
 
 function uniqueParticipantReferences(references: string[]): string[] {
   return [...new Set(references.map((reference) => reference.trim()).filter(Boolean))];
+}
+
+function assertRequiredCreatorActor(
+  requiredCreatorIdentityId: string,
+  actorIdentityId: string
+): void {
+  if (requiredCreatorIdentityId !== actorIdentityId) {
+    throw new Error(
+      `Required creator identity ${requiredCreatorIdentityId} does not match initiating actor ${actorIdentityId}.`
+    );
+  }
 }

@@ -17,9 +17,14 @@ const createdGroupParticipantResultSchema = z.object({
   isInviteV4Sent: z.boolean(),
   requiredCreatorMembershipStatus: z.enum([
     'initial_create_missing',
+    'technical_retry_pending',
     'direct_add_pending',
     'invite_pending',
-    'manual_join_pending',
+    'privacy_invite_delivery_uncertain',
+    'privacy_action_required',
+    'provider_rejection',
+    'outcome_ambiguous',
+    'direct_add_not_observed',
     'membership_confirmed'
   ]).optional()
 }).strict();
@@ -30,7 +35,21 @@ const createdGroupSchema = z.object({
   participants: z.record(createdGroupParticipantResultSchema)
 }).strict();
 
-const createdGroupCandidateSchema = createdGroupSchema.extend({
+export const requiredCreatorBindingSchema = z.object({
+  identityId: z.string().trim().min(1),
+  participantWid: z.string().trim().min(1),
+  evidenceDigest: z.string().regex(/^[a-f0-9]{64}$/)
+}).strict();
+
+export const persistedRequiredCreatorReferenceSchema = requiredCreatorBindingSchema.extend({
+  evidenceDigest: z.string().regex(/^[a-f0-9]{64}$/).optional()
+}).strict();
+
+const managedCommunitySubgroupSchema = createdGroupSchema.extend({
+  requiredCreator: requiredCreatorBindingSchema
+}).strict();
+
+const createdGroupCandidateSchema = managedCommunitySubgroupSchema.extend({
   intendedParentCommunityJid: z.string().min(1)
 }).strict();
 
@@ -46,34 +65,37 @@ export const communitySubgroupCandidateOutputSchema = z.object({
 export const communitySubgroupReconcileCreatorInputSchema = z.object({
   chatId: z.string().min(1),
   title: z.string().min(1),
+  requiredCreator: persistedRequiredCreatorReferenceSchema,
   participants: z.record(createdGroupParticipantResultSchema).optional(),
   parentCommunityWid: z.string().min(1)
 }).strict();
 
 export const communitySubgroupReconcileCreatorOutputSchema = z.object({
-  created: createdGroupSchema
+  created: managedCommunitySubgroupSchema
 }).strict();
 
 export const communitySubgroupConfigureInputSchema = z.object({
   chatId: z.string().min(1),
   title: z.string().min(1),
+  requiredCreator: requiredCreatorBindingSchema,
   description: z.string().optional(),
   participants: z.record(createdGroupParticipantResultSchema).optional(),
   parentCommunityWid: z.string().min(1)
 }).strict();
 
 export const communitySubgroupConfigureOutputSchema = z.object({
-  created: createdGroupSchema
+  created: managedCommunitySubgroupSchema
 }).strict();
 
 export const communitySubgroupCompleteOutputSchema = z.object({
-  created: createdGroupSchema,
+  created: managedCommunitySubgroupSchema,
   participantCount: z.number().int().nonnegative().optional()
 }).strict();
 
 export const communitySubgroupCompleteInputSchema = z.object({
   chatId: z.string().min(1),
   title: z.string().min(1),
+  requiredCreator: requiredCreatorBindingSchema,
   description: z.string().optional(),
   participantWids: z.array(z.string().min(1)),
   participants: z.record(createdGroupParticipantResultSchema).optional(),
