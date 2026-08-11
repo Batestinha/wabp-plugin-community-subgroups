@@ -5,7 +5,6 @@ export const communitySubgroupCommunityPermissionSchema = z.enum(['everyone', 'c
 export const communitySubgroupDisappearingMessagesSchema = z.enum(['off', '24h', '7d', '90d']);
 
 export const communitySubgroupCreationPolicySchema = z.object({
-  autoSendInviteV4: z.boolean().default(true),
   infoEditPermission: communitySubgroupPermissionSchema.default('admins_only'),
   sendMessagesPermission: communitySubgroupPermissionSchema.default('all_members'),
   memberAddPermission: communitySubgroupPermissionSchema.default('all_members'),

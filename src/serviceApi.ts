@@ -3,6 +3,8 @@ import { z } from 'zod';
 export const COMMUNITY_SUBGROUPS_SERVICE_ID = 'official.community-subgroups.v1';
 export const COMMUNITY_SUBGROUPS_CANDIDATE_METHOD = 'createManagedSubgroupCandidate';
 export const COMMUNITY_SUBGROUPS_CANDIDATE_TIMEOUT_MS = 120_000;
+export const COMMUNITY_SUBGROUPS_RECONCILE_CREATOR_METHOD = 'reconcileManagedSubgroupCreator';
+export const COMMUNITY_SUBGROUPS_RECONCILE_CREATOR_TIMEOUT_MS = 120_000;
 export const COMMUNITY_SUBGROUPS_CONFIGURE_METHOD = 'configureManagedSubgroup';
 export const COMMUNITY_SUBGROUPS_CONFIGURE_TIMEOUT_MS = 120_000;
 export const COMMUNITY_SUBGROUPS_COMPLETE_METHOD = 'completeManagedSubgroup';
@@ -12,7 +14,14 @@ const createdGroupParticipantResultSchema = z.object({
   statusCode: z.number().int().optional(),
   message: z.string().optional(),
   isGroupCreator: z.boolean(),
-  isInviteV4Sent: z.boolean()
+  isInviteV4Sent: z.boolean(),
+  requiredCreatorMembershipStatus: z.enum([
+    'initial_create_missing',
+    'direct_add_pending',
+    'invite_pending',
+    'manual_join_pending',
+    'membership_confirmed'
+  ]).optional()
 }).strict();
 
 const createdGroupSchema = z.object({
@@ -32,6 +41,17 @@ export const communitySubgroupCandidateInputSchema = z.object({
 
 export const communitySubgroupCandidateOutputSchema = z.object({
   created: createdGroupCandidateSchema
+}).strict();
+
+export const communitySubgroupReconcileCreatorInputSchema = z.object({
+  chatId: z.string().min(1),
+  title: z.string().min(1),
+  participants: z.record(createdGroupParticipantResultSchema).optional(),
+  parentCommunityWid: z.string().min(1)
+}).strict();
+
+export const communitySubgroupReconcileCreatorOutputSchema = z.object({
+  created: createdGroupSchema
 }).strict();
 
 export const communitySubgroupConfigureInputSchema = z.object({
@@ -62,6 +82,8 @@ export const communitySubgroupCompleteInputSchema = z.object({
 
 export type CommunitySubgroupCandidateInput = z.infer<typeof communitySubgroupCandidateInputSchema>;
 export type CommunitySubgroupCandidateOutput = z.infer<typeof communitySubgroupCandidateOutputSchema>;
+export type CommunitySubgroupReconcileCreatorInput = z.infer<typeof communitySubgroupReconcileCreatorInputSchema>;
+export type CommunitySubgroupReconcileCreatorOutput = z.infer<typeof communitySubgroupReconcileCreatorOutputSchema>;
 export type CommunitySubgroupConfigureInput = z.infer<typeof communitySubgroupConfigureInputSchema>;
 export type CommunitySubgroupConfigureOutput = z.infer<typeof communitySubgroupConfigureOutputSchema>;
 export type CommunitySubgroupCompleteInput = z.infer<typeof communitySubgroupCompleteInputSchema>;

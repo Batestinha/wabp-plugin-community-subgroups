@@ -58,7 +58,6 @@ export const communitySubgroupsControls: ControlDescriptor[] = [
     min: 1,
     max: 256
   }, { widget: 'number' }),
-  control('creationPolicy.autoSendInviteV4', 'Send invite fallback', 'Send WhatsApp invite requests when members cannot be added directly.', 100, { type: 'boolean' }, { widget: 'toggle' }, 'New subgroup defaults'),
   control('creationPolicy.infoEditPermission', 'Edit group info', 'Choose who can edit the new subgroup name, icon, description, and settings.', 110, {
     type: 'enum',
     enum: MEMBER_PERMISSION_OPTIONS

@@ -20,10 +20,12 @@ import {
   COMMUNITY_SUBGROUPS_CANDIDATE_METHOD,
   COMMUNITY_SUBGROUPS_COMPLETE_METHOD,
   COMMUNITY_SUBGROUPS_CONFIGURE_METHOD,
+  COMMUNITY_SUBGROUPS_RECONCILE_CREATOR_METHOD,
   COMMUNITY_SUBGROUPS_SERVICE_ID,
   type CommunitySubgroupCandidateOutput,
   type CommunitySubgroupCompleteOutput,
-  type CommunitySubgroupConfigureOutput
+  type CommunitySubgroupConfigureOutput,
+  type CommunitySubgroupReconcileCreatorOutput
 } from './serviceApi';
 import {
   EVENT_SUBGROUP_OWNERSHIP_RESOLVE_METHOD,
@@ -177,7 +179,7 @@ function registerSubgroupFlowCompletionHandler(
       // Carry stable identity references through candidate creation and linking.
       // The platform completion operation owns authoritative address resolution
       // and records individual failures after the community link is confirmed.
-      const participantWids = unique([draft.actorWid, ...answers.participantReferences]);
+      const participantWids = unique(answers.participantReferences);
       const serviceContext = {
         serviceId: COMMUNITY_SUBGROUPS_SERVICE_ID,
         scopeId: draft.scopeId,
@@ -193,6 +195,16 @@ function registerSubgroupFlowCompletionHandler(
           parentCommunityWid: draft.parentCommunityWid
         }
       });
+      const creatorReconciled = await context.services.call<CommunitySubgroupReconcileCreatorOutput>({
+        ...serviceContext,
+        method: COMMUNITY_SUBGROUPS_RECONCILE_CREATOR_METHOD,
+        input: {
+          chatId: candidate.created.chatId,
+          title: candidate.created.title,
+          participants: candidate.created.participants,
+          parentCommunityWid: draft.parentCommunityWid
+        }
+      });
       await context.services.call<CommunitySubgroupConfigureOutput>({
         ...serviceContext,
         method: COMMUNITY_SUBGROUPS_CONFIGURE_METHOD,
@@ -200,7 +212,7 @@ function registerSubgroupFlowCompletionHandler(
           chatId: candidate.created.chatId,
           title: candidate.created.title,
           ...(answers.description ? { description: answers.description } : {}),
-          participants: candidate.created.participants,
+          participants: creatorReconciled.created.participants,
           parentCommunityWid: draft.parentCommunityWid
         }
       });
@@ -212,7 +224,7 @@ function registerSubgroupFlowCompletionHandler(
           title: candidate.created.title,
           ...(answers.description ? { description: answers.description } : {}),
           participantWids,
-          participants: candidate.created.participants,
+          participants: creatorReconciled.created.participants,
           parentCommunityWid: draft.parentCommunityWid
         }
       });

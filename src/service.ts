@@ -4,16 +4,21 @@ import { parseCommunitySubgroupsConfig } from './config';
 import {
   COMMUNITY_SUBGROUPS_CANDIDATE_METHOD,
   COMMUNITY_SUBGROUPS_CANDIDATE_TIMEOUT_MS,
+  COMMUNITY_SUBGROUPS_RECONCILE_CREATOR_METHOD,
+  COMMUNITY_SUBGROUPS_RECONCILE_CREATOR_TIMEOUT_MS,
   COMMUNITY_SUBGROUPS_CONFIGURE_METHOD,
   COMMUNITY_SUBGROUPS_CONFIGURE_TIMEOUT_MS,
   COMMUNITY_SUBGROUPS_COMPLETE_METHOD,
   COMMUNITY_SUBGROUPS_COMPLETE_TIMEOUT_MS,
   COMMUNITY_SUBGROUPS_SERVICE_ID,
   type CommunitySubgroupCandidateInput,
+  type CommunitySubgroupReconcileCreatorInput,
   type CommunitySubgroupConfigureInput,
   type CommunitySubgroupCompleteInput,
   communitySubgroupCandidateInputSchema,
   communitySubgroupCandidateOutputSchema,
+  communitySubgroupReconcileCreatorInputSchema,
+  communitySubgroupReconcileCreatorOutputSchema,
   communitySubgroupConfigureInputSchema,
   communitySubgroupConfigureOutputSchema,
   communitySubgroupCompleteInputSchema,
@@ -39,7 +44,7 @@ export function registerCommunitySubgroupServices(
           if (!createCandidate) {
             throw new Error('Managed community subgroup candidate creation is unavailable in this runtime.');
           }
-          if (!call.actorIdentityId) {
+          if (!call.actorIdentityId || !call.actorWid) {
             throw new Error('Managed community subgroup candidate creation requires an actor.');
           }
           const config = parseCommunitySubgroupsConfig(
@@ -51,6 +56,39 @@ export function registerCommunitySubgroupServices(
           return createCandidate({
             scopeId: call.scopeId,
             title: input.title,
+            parentCommunityWid: input.parentCommunityWid,
+            creatorWid: call.actorWid
+          });
+        }
+      },
+      {
+        name: COMMUNITY_SUBGROUPS_RECONCILE_CREATOR_METHOD,
+        access: 'mutation',
+        timeoutMs: COMMUNITY_SUBGROUPS_RECONCILE_CREATOR_TIMEOUT_MS,
+        inputSchema: communitySubgroupReconcileCreatorInputSchema,
+        outputSchema: communitySubgroupReconcileCreatorOutputSchema,
+        async handler(rawInput, call) {
+          const input = rawInput as CommunitySubgroupReconcileCreatorInput;
+          const reconcileCreator = context.platform.communityOperations
+            ?.reconcileManagedCommunitySubgroupCreator;
+          if (!reconcileCreator) {
+            throw new Error('Managed community subgroup creator reconciliation is unavailable in this runtime.');
+          }
+          if (!call.actorIdentityId || !call.actorWid) {
+            throw new Error('Managed community subgroup creator reconciliation requires an actor.');
+          }
+          const config = parseCommunitySubgroupsConfig(
+            await context.configFor(call.scopeId, call.actorIdentityId)
+          );
+          if (!config.enabled) {
+            throw new Error('official.community-subgroups is disabled for this scope.');
+          }
+          return reconcileCreator({
+            scopeId: call.scopeId,
+            chatId: input.chatId,
+            title: input.title,
+            creatorWid: call.actorWid,
+            ...(input.participants ? { participants: input.participants } : {}),
             parentCommunityWid: input.parentCommunityWid
           });
         }
@@ -101,7 +139,7 @@ export function registerCommunitySubgroupServices(
           if (!completeManagedCommunitySubgroup) {
             throw new Error('Managed community subgroup completion is unavailable in this runtime.');
           }
-          if (!call.actorIdentityId) {
+          if (!call.actorIdentityId || !call.actorWid) {
             throw new Error('Managed community subgroup completion requires an actor.');
           }
 
@@ -130,6 +168,7 @@ export function registerCommunitySubgroupServices(
             scopeId: call.scopeId,
             chatId: input.chatId,
             title: input.title,
+            creatorWid: call.actorWid,
             ...(input.description ? { description: input.description } : {}),
             participantWids: attemptedParticipantWids,
             participants: {
