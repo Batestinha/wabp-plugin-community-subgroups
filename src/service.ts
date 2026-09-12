@@ -1,5 +1,5 @@
-import type { PluginServiceRegistrationContext } from '../../../platform/pluginRuntime/types';
-import type { PluginServiceRegistration } from '../../../platform/pluginRuntime/pluginServices';
+import type { CommunityServicePluginContext as PluginServiceRegistrationContext } from '../../../../packages/plugin-sdk/src/community-operations';
+import type { PluginServiceRegistration } from '../../../../packages/plugin-sdk/src/services';
 import { parseCommunitySubgroupsConfig } from './config';
 import {
   COMMUNITY_SUBGROUPS_CANDIDATE_METHOD,

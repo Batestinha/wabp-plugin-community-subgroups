@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "contracts": [
+    {
+      "id": "official.community-events.subgroup-ownership.v1",
+      "repository": "https://github.com/Batestinha/wabp",
+      "commit": "951767afbfbaf1e00f31feee2d946298ab78cceb",
+      "path": "src/plugins/official/community-events/serviceApi.ts",
+      "upstreamSha256": "6c45d401cc018c02f7eba26fcb20f3a19538e2457f48ff20e57e80924b78d4cd",
+      "vendoredPath": "community-events-v1.ts",
+      "vendoredSha256": "6c45d401cc018c02f7eba26fcb20f3a19538e2457f48ff20e57e80924b78d4cd",
+      "patches": [],
+      "license": "MIT",
+      "licenseFile": "LICENSE.community-events",
+      "containsProviderImplementation": false
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import type { FlowDefinition } from '../../../adminBot/flows/flowTypes';
-import type { FlowSessionSnapshot } from '../../../adminBot/flows/flowEngine';
-import type { TranslateFn } from '../../../platform/i18n';
+import type { FlowDefinition } from '../../../../packages/plugin-sdk/src/flow-types';
+import type { FlowSessionSnapshot } from '../../../../packages/plugin-sdk/src/flow-engine';
+import type { TranslateFn } from '../../../../packages/plugin-sdk/src/i18n';
 
 export const SUBGROUP_CONFIRM_STEP_ID = 'confirm';
 export const PIN_DURATION_STEP_ID = 'duration';

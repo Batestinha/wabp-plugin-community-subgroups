@@ -1,9 +1,9 @@
-import type { CommandMetadata } from '../../../adminBot/router/commandMetadata';
-import type { CommandContext } from '../../../adminBot/router/commandRouter';
-import { logger } from '../../../platform/logging/logger';
-import type { PluginCommandContext } from '../../../platform/pluginRuntime/types';
-import { requireStableIdentityAddress } from '../../../platform/identity/messageActor';
-import { requireOfficialCommandRuntime, requireScopeId } from '../shared';
+import type { CommandMetadata } from '../../../../packages/plugin-sdk/src/command-metadata';
+import type { CommandContext } from '../../../../packages/plugin-sdk/src/commands';
+import type { CommunityCommandPluginContext as PluginCommandContext } from '../../../../packages/plugin-sdk/src/community-operations';
+import { requireStableIdentityAddress } from '../../../../packages/plugin-sdk/src/message-actor';
+import { requirePluginStateContext } from '../../../../packages/plugin-sdk/src/stateful-plugin';
+import { requireScopeId } from '../../../../packages/plugin-sdk/src/commands';
 import { parseCommunitySubgroupsConfig } from './config';
 import {
   createPinDurationFlowDefinition,
@@ -31,7 +31,7 @@ import {
   EVENT_SUBGROUP_OWNERSHIP_RESOLVE_METHOD,
   EVENT_SUBGROUP_OWNERSHIP_SERVICE_ID,
   type EventSubgroupOwnershipResolveOutput
-} from '../community-events/serviceApi';
+} from './contracts/community-events-v1';
 
 interface SubgroupDraft {
   flowSessionId: string;
@@ -113,7 +113,7 @@ export function registerCommunitySubgroupCommands(context: PluginCommandContext)
 }
 
 async function startCreateFlow(context: PluginCommandContext, ctx: CommandContext) {
-  const runtime = requireOfficialCommandRuntime(context);
+  const runtime = requirePluginStateContext(context);
   const scopeId = requireScopeId(ctx);
   const actor = subgroupCommandActor(ctx);
   const config = parseCommunitySubgroupsConfig(await runtime.configFor(scopeId, actor.identityId));
@@ -152,7 +152,7 @@ function registerSubgroupFlowCompletionHandler(
   flowType: string,
   t: CommandContext['t']
 ): void {
-  const runtime = requireOfficialCommandRuntime(context);
+  const runtime = requirePluginStateContext(context);
   context.flowEngine.registerPromptHandler(subgroupConfirmPurpose(flowType), async (lock, activeTransport) => {
     if (!lock.flowSessionId) {
       return false;
@@ -297,7 +297,7 @@ async function resolveEventSubgroupOwnership(
       input: { subgroupChatId: ctx.groupWid! }
     });
   } catch (error) {
-    logger.warn({
+    context.logger?.warn({
       error,
       scopeId,
       subgroupChatId: ctx.groupWid
@@ -330,7 +330,7 @@ async function updateDescription(context: PluginCommandContext, ctx: CommandCont
 }
 
 async function startPinDurationFlow(context: PluginCommandContext, ctx: CommandContext) {
-  const runtime = requireOfficialCommandRuntime(context);
+  const runtime = requirePluginStateContext(context);
   const scopeId = requireScopeId(ctx);
   const config = parseCommunitySubgroupsConfig(await runtime.configFor(scopeId, subgroupCommandActor(ctx).identityId));
   if (!config.enabled) {
@@ -373,7 +373,7 @@ function registerPinDurationHandler(
   flowType: string,
   t: CommandContext['t']
 ): void {
-  const runtime = requireOfficialCommandRuntime(context);
+  const runtime = requirePluginStateContext(context);
   context.flowEngine.registerPromptHandler(pinDurationPurpose(flowType), async (lock, activeTransport) => {
     if (!lock.flowSessionId) {
       return false;
@@ -409,7 +409,7 @@ function registerPinDurationHandler(
         durationLabel: pinDurationLabel(durationSeconds, t)
       }), { quotedMessageId: draft.messageId });
     } catch (error) {
-      logger.warn({
+      context.logger?.warn({
         error,
         scopeId: draft.scopeId,
         groupWid: draft.groupWid,
@@ -445,7 +445,7 @@ async function unpinQuotedMessage(context: PluginCommandContext, ctx: CommandCon
 }
 
 async function scopedConfigEnabled(context: PluginCommandContext, ctx: CommandContext): Promise<boolean> {
-  const runtime = requireOfficialCommandRuntime(context);
+  const runtime = requirePluginStateContext(context);
   const scopeId = requireScopeId(ctx);
   const config = parseCommunitySubgroupsConfig(await runtime.configFor(scopeId, subgroupCommandActor(ctx).identityId));
   return config.enabled;

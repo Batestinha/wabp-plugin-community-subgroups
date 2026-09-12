@@ -1,4 +1,4 @@
-import type { PluginManifest } from '../../../platform/pluginRuntime/manifest';
+import type { PluginManifest } from '../../../../packages/plugin-sdk/src/manifest';
 import { communitySubgroupsConfigSchema } from './config';
 import { communitySubgroupsMessages } from './messages';
 import {
@@ -18,8 +18,8 @@ export const COMMUNITY_SUBGROUPS_PLUGIN_ID = 'official.community-subgroups';
 export const communitySubgroupsManifest: PluginManifest = {
   pluginId: COMMUNITY_SUBGROUPS_PLUGIN_ID,
   kind: 'managed_group',
-  version: '0.1.0',
-  coreApiRange: '>=0.2.0',
+  version: '0.1.1',
+  coreApiRange: '^0.3.0',
   messageNamespace: 'official.community-subgroups',
   descriptionKey: 'official.community-subgroups.description',
   defaultMessages: communitySubgroupsMessages,
