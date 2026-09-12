@@ -1,5 +1,5 @@
-import type { CommunityServicePluginContext as PluginServiceRegistrationContext } from '../../../../packages/plugin-sdk/src/community-operations';
-import type { PluginServiceRegistration } from '../../../../packages/plugin-sdk/src/services';
+import type { CommunityServicePluginContext as PluginServiceRegistrationContext } from '@wabs/plugin-sdk/community-operations';
+import type { PluginServiceRegistration } from '@wabs/plugin-sdk/services';
 import { parseCommunitySubgroupsConfig } from './config';
 import {
   COMMUNITY_SUBGROUPS_CANDIDATE_METHOD,

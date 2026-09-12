@@ -1,0 +1,516 @@
+{
+  "schemaVersion": 1,
+  "pluginId": "official.community-subgroups",
+  "name": "Community Subgroups",
+  "description": "Member-facing community subgroup creation and subgroup profile controls.",
+  "kind": "managed_group",
+  "version": "0.1.1",
+  "coreApiRange": "^0.3.0",
+  "entrypoint": "dist/index.js",
+  "messageNamespace": "official.community-subgroups",
+  "descriptionKey": "official.community-subgroups.description",
+  "commands": [
+    "/subgroup create",
+    "/title",
+    "/description",
+    "/pin",
+    "/unpin"
+  ],
+  "help": {
+    "featureId": "subgroups",
+    "titleKey": "official.community-subgroups.help.feature.title",
+    "summaryKey": "official.community-subgroups.help.feature.summary",
+    "order": 50,
+    "aliases": [
+      "subgroup",
+      "community group",
+      "child group"
+    ],
+    "topics": [
+      {
+        "topicId": "create-subgroup",
+        "titleKey": "official.community-subgroups.help.create.title",
+        "summaryKey": "official.community-subgroups.help.create.summary",
+        "order": 10,
+        "commands": [
+          "/subgroup create"
+        ],
+        "instructionKeys": [
+          "official.community-subgroups.help.create.instruction"
+        ],
+        "exampleKeys": [
+          "official.community-subgroups.help.create.example"
+        ],
+        "keywords": [
+          "create",
+          "child group",
+          "members"
+        ],
+        "availability": {
+          "invocation": "group_only",
+          "requiredAccessPlane": "group_member"
+        }
+      },
+      {
+        "topicId": "edit-subgroup",
+        "titleKey": "official.community-subgroups.help.edit.title",
+        "summaryKey": "official.community-subgroups.help.edit.summary",
+        "order": 20,
+        "commands": [
+          "/title",
+          "/description"
+        ],
+        "instructionKeys": [
+          "official.community-subgroups.help.edit.instruction"
+        ],
+        "exampleKeys": [
+          "official.community-subgroups.help.title.example"
+        ],
+        "keywords": [
+          "title",
+          "description",
+          "rename"
+        ],
+        "availability": {
+          "invocation": "group_only",
+          "requiredAccessPlane": "group_member"
+        }
+      },
+      {
+        "topicId": "pin-messages",
+        "titleKey": "official.community-subgroups.help.pin.title",
+        "summaryKey": "official.community-subgroups.help.pin.summary",
+        "order": 30,
+        "commands": [
+          "/pin",
+          "/unpin"
+        ],
+        "instructionKeys": [
+          "official.community-subgroups.help.pin.instruction"
+        ],
+        "exampleKeys": [
+          "official.community-subgroups.help.pin.example"
+        ],
+        "keywords": [
+          "pin",
+          "unpin",
+          "message"
+        ],
+        "availability": {
+          "invocation": "group_only",
+          "requiredAccessPlane": "group_member"
+        }
+      }
+    ]
+  },
+  "eventSubscriptions": [],
+  "services": [
+    {
+      "serviceId": "official.community-subgroups.v1",
+      "methods": [
+        {
+          "name": "createManagedSubgroupCandidate",
+          "access": "mutation",
+          "timeoutMs": 120000
+        },
+        {
+          "name": "reconcileManagedSubgroupCreator",
+          "access": "mutation",
+          "timeoutMs": 120000
+        },
+        {
+          "name": "configureManagedSubgroup",
+          "access": "mutation",
+          "timeoutMs": 120000
+        },
+        {
+          "name": "completeManagedSubgroup",
+          "access": "mutation",
+          "timeoutMs": 120000
+        }
+      ]
+    }
+  ],
+  "requiredPermissions": [],
+  "requiredBotCapabilities": [],
+  "dangerousActions": [
+    "group.setSubject",
+    "group.setDescription",
+    "message.pin",
+    "message.unpin"
+  ],
+  "backgroundJobs": [],
+  "cancellation": {
+    "workflows": [
+      {
+        "id": "subgroup-create",
+        "description": "Guided subgroup creation before the managed group is created.",
+        "mode": "core-flow",
+        "scope": "actor-chat",
+        "commands": [
+          "/subgroup create"
+        ],
+        "cancellableStates": [
+          "active"
+        ],
+        "terminalStates": [
+          "completed",
+          "cancelled",
+          "expired"
+        ],
+        "effects": [
+          "discard-subgroup-draft"
+        ]
+      },
+      {
+        "id": "pin-duration",
+        "description": "Guided pin-duration choice before a quoted message is pinned.",
+        "mode": "core-flow",
+        "scope": "actor-chat",
+        "commands": [
+          "/pin"
+        ],
+        "cancellableStates": [
+          "active"
+        ],
+        "terminalStates": [
+          "completed",
+          "cancelled",
+          "expired"
+        ],
+        "effects": [
+          "discard-pin-draft"
+        ]
+      }
+    ]
+  },
+  "dependencies": [],
+  "assistant": {
+    "summary": "Member-facing creation and management of community child groups.",
+    "useCases": [
+      "Let community members create a subgroup through a guided title, description, and member setup flow.",
+      "Let subgroup members request title and description changes through the bot.",
+      "Let subgroup members pin or unpin quoted messages through the bot."
+    ],
+    "prerequisites": [
+      "The plugin must be enabled for the target scope.",
+      "The bot must be a community admin for subgroup creation.",
+      "The bot must be a group admin in child groups for title, description, pin, and unpin actions."
+    ],
+    "workflows": [
+      {
+        "intent": "community_subgroup_create",
+        "description": "Start a guided subgroup creation flow.",
+        "commands": [
+          "/subgroup create"
+        ]
+      },
+      {
+        "intent": "community_subgroup_profile",
+        "description": "Change the title or description of the current subgroup.",
+        "commands": [
+          "/title",
+          "/description"
+        ]
+      },
+      {
+        "intent": "community_subgroup_pin",
+        "description": "Pin or unpin a quoted subgroup message.",
+        "commands": [
+          "/pin",
+          "/unpin"
+        ]
+      }
+    ]
+  },
+  "operatorConsole": {
+    "configPaths": [
+      "enabled",
+      "maxParticipants",
+      "creationPolicy.infoEditPermission",
+      "creationPolicy.sendMessagesPermission",
+      "creationPolicy.memberAddPermission",
+      "creationPolicy.joinApproval",
+      "creationPolicy.disappearingMessages",
+      "creationPolicy.parentGroupCreatePermission",
+      "creationPolicy.parentMemberAddPermission"
+    ],
+    "controls": [
+      {
+        "id": "plugin.official.community-subgroups.enabled",
+        "path": "enabled",
+        "label": "Enabled",
+        "description": "Allow members to create and manage community subgroups through the bot.",
+        "section": "Community subgroups",
+        "order": 10,
+        "schema": {
+          "type": "boolean"
+        },
+        "ui": {
+          "widget": "toggle",
+          "helpText": "Allow members to create and manage community subgroups through the bot."
+        }
+      },
+      {
+        "id": "plugin.official.community-subgroups.maxParticipants",
+        "path": "maxParticipants",
+        "label": "Maximum members",
+        "description": "Maximum number of requested members in one subgroup creation flow.",
+        "section": "Community subgroups",
+        "order": 30,
+        "schema": {
+          "type": "number",
+          "unit": "items",
+          "min": 1,
+          "max": 256
+        },
+        "ui": {
+          "widget": "number",
+          "helpText": "Maximum number of requested members in one subgroup creation flow."
+        }
+      },
+      {
+        "id": "plugin.official.community-subgroups.creationPolicy.infoEditPermission",
+        "path": "creationPolicy.infoEditPermission",
+        "label": "Edit group info",
+        "description": "Choose who can edit the new subgroup name, icon, description, and settings.",
+        "section": "New subgroup defaults",
+        "order": 110,
+        "schema": {
+          "type": "enum",
+          "enum": [
+            {
+              "value": "all_members",
+              "label": "All members"
+            },
+            {
+              "value": "admins_only",
+              "label": "Only admins"
+            }
+          ]
+        },
+        "ui": {
+          "widget": "select",
+          "options": [
+            {
+              "value": "all_members",
+              "label": "All members"
+            },
+            {
+              "value": "admins_only",
+              "label": "Only admins"
+            }
+          ],
+          "helpText": "Choose who can edit the new subgroup name, icon, description, and settings."
+        }
+      },
+      {
+        "id": "plugin.official.community-subgroups.creationPolicy.sendMessagesPermission",
+        "path": "creationPolicy.sendMessagesPermission",
+        "label": "Send messages",
+        "description": "Choose whether all members or only admins can send messages in new subgroups.",
+        "section": "New subgroup defaults",
+        "order": 120,
+        "schema": {
+          "type": "enum",
+          "enum": [
+            {
+              "value": "all_members",
+              "label": "All members"
+            },
+            {
+              "value": "admins_only",
+              "label": "Only admins"
+            }
+          ]
+        },
+        "ui": {
+          "widget": "select",
+          "options": [
+            {
+              "value": "all_members",
+              "label": "All members"
+            },
+            {
+              "value": "admins_only",
+              "label": "Only admins"
+            }
+          ],
+          "helpText": "Choose whether all members or only admins can send messages in new subgroups."
+        }
+      },
+      {
+        "id": "plugin.official.community-subgroups.creationPolicy.memberAddPermission",
+        "path": "creationPolicy.memberAddPermission",
+        "label": "Add members / invite links",
+        "description": "Choose who can add members and create or share invite links in new subgroups.",
+        "section": "New subgroup defaults",
+        "order": 130,
+        "schema": {
+          "type": "enum",
+          "enum": [
+            {
+              "value": "all_members",
+              "label": "All members"
+            },
+            {
+              "value": "admins_only",
+              "label": "Only admins"
+            }
+          ]
+        },
+        "ui": {
+          "widget": "select",
+          "options": [
+            {
+              "value": "all_members",
+              "label": "All members"
+            },
+            {
+              "value": "admins_only",
+              "label": "Only admins"
+            }
+          ],
+          "helpText": "Choose who can add members and create or share invite links in new subgroups."
+        }
+      },
+      {
+        "id": "plugin.official.community-subgroups.creationPolicy.joinApproval",
+        "path": "creationPolicy.joinApproval",
+        "label": "Approve new members",
+        "description": "Require admins to approve new subgroup join requests.",
+        "section": "New subgroup defaults",
+        "order": 140,
+        "schema": {
+          "type": "boolean"
+        },
+        "ui": {
+          "widget": "toggle",
+          "helpText": "Require admins to approve new subgroup join requests."
+        }
+      },
+      {
+        "id": "plugin.official.community-subgroups.creationPolicy.disappearingMessages",
+        "path": "creationPolicy.disappearingMessages",
+        "label": "Disappearing messages",
+        "description": "Set the disappearing-message timer for new subgroups.",
+        "section": "New subgroup defaults",
+        "order": 150,
+        "schema": {
+          "type": "enum",
+          "enum": [
+            {
+              "value": "off",
+              "label": "Off"
+            },
+            {
+              "value": "24h",
+              "label": "24 hours"
+            },
+            {
+              "value": "7d",
+              "label": "7 days"
+            },
+            {
+              "value": "90d",
+              "label": "90 days"
+            }
+          ]
+        },
+        "ui": {
+          "widget": "select",
+          "options": [
+            {
+              "value": "off",
+              "label": "Off"
+            },
+            {
+              "value": "24h",
+              "label": "24 hours"
+            },
+            {
+              "value": "7d",
+              "label": "7 days"
+            },
+            {
+              "value": "90d",
+              "label": "90 days"
+            }
+          ],
+          "helpText": "Set the disappearing-message timer for new subgroups."
+        }
+      },
+      {
+        "id": "plugin.official.community-subgroups.creationPolicy.parentGroupCreatePermission",
+        "path": "creationPolicy.parentGroupCreatePermission",
+        "label": "Who can create groups",
+        "description": "Choose who can create groups in the parent community.",
+        "section": "Parent community defaults",
+        "order": 200,
+        "schema": {
+          "type": "enum",
+          "enum": [
+            {
+              "value": "everyone",
+              "label": "Everyone"
+            },
+            {
+              "value": "community_admins",
+              "label": "Only community admins"
+            }
+          ]
+        },
+        "ui": {
+          "widget": "select",
+          "options": [
+            {
+              "value": "everyone",
+              "label": "Everyone"
+            },
+            {
+              "value": "community_admins",
+              "label": "Only community admins"
+            }
+          ],
+          "helpText": "Choose who can create groups in the parent community."
+        }
+      },
+      {
+        "id": "plugin.official.community-subgroups.creationPolicy.parentMemberAddPermission",
+        "path": "creationPolicy.parentMemberAddPermission",
+        "label": "Who can add members",
+        "description": "Choose who can add new members to the parent community.",
+        "section": "Parent community defaults",
+        "order": 210,
+        "schema": {
+          "type": "enum",
+          "enum": [
+            {
+              "value": "everyone",
+              "label": "Everyone"
+            },
+            {
+              "value": "community_admins",
+              "label": "Only community admins"
+            }
+          ]
+        },
+        "ui": {
+          "widget": "select",
+          "options": [
+            {
+              "value": "everyone",
+              "label": "Everyone"
+            },
+            {
+              "value": "community_admins",
+              "label": "Only community admins"
+            }
+          ],
+          "helpText": "Choose who can add new members to the parent community."
+        }
+      }
+    ],
+    "internalConfigPaths": []
+  }
+}

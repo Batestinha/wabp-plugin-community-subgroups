@@ -1,9 +1,10 @@
-import type { CommandMetadata } from '../../../../packages/plugin-sdk/src/command-metadata';
-import type { CommandContext } from '../../../../packages/plugin-sdk/src/commands';
-import type { CommunityCommandPluginContext as PluginCommandContext } from '../../../../packages/plugin-sdk/src/community-operations';
-import { requireStableIdentityAddress } from '../../../../packages/plugin-sdk/src/message-actor';
-import { requirePluginStateContext } from '../../../../packages/plugin-sdk/src/stateful-plugin';
-import { requireScopeId } from '../../../../packages/plugin-sdk/src/commands';
+import type { CommandMetadata } from '@wabs/plugin-sdk/command-metadata';
+import type { FlowSessionSnapshot } from '@wabs/plugin-sdk/flow-engine';
+import type { CommandContext } from '@wabs/plugin-sdk/commands';
+import type { CommunityCommandPluginContext as PluginCommandContext } from '@wabs/plugin-sdk/community-operations';
+import { requireStableIdentityAddress } from '@wabs/plugin-sdk/message-actor';
+import { requirePluginStateContext } from '@wabs/plugin-sdk/stateful-plugin';
+import { requireScopeId } from '@wabs/plugin-sdk/commands';
 import { parseCommunitySubgroupsConfig } from './config';
 import {
   createPinDurationFlowDefinition,
@@ -53,6 +54,8 @@ interface PinDraft {
   groupWid: string;
   chatId: string;
   actorWid: string;
+  actorIdentityId?: string | undefined;
+  promptQuotedMessageId?: string | undefined;
   messageId: string;
 }
 
@@ -70,6 +73,7 @@ const GROUP_MEMBER_COMMAND: Omit<CommandMetadata, 'auditAction' | 'mutation'> = 
 
 export function registerCommunitySubgroupCommands(context: PluginCommandContext): void {
   const router = context.router;
+  registerFlowRecovery(context);
 
   router.register('subgroup', 'create', commandMetadata({
     auditAction: 'community_subgroups.create',
@@ -127,23 +131,28 @@ async function startCreateFlow(context: PluginCommandContext, ctx: CommandContex
 
   const definition = createSubgroupFlowDefinition({ t: ctx.t });
   registerSubgroupFlowCompletionHandler(context, definition.flowType, ctx.t);
-  const { flowSessionId } = await context.flowEngine.startFlow({
+  await context.flowEngine.startFlow({
     definition,
     message: ctx.message,
-    scopeId
-  });
-  const draft: SubgroupDraft = {
-    flowSessionId,
-    flowType: definition.flowType,
     scopeId,
-    ...(ctx.groupId ? { groupId: ctx.groupId } : {}),
-    ...(ctx.groupWid ? { groupWid: ctx.groupWid } : {}),
-    chatId: ctx.message.chatId,
-    actorIdentityId: actor.identityId,
-    actorWid: actor.canonicalWid,
-    parentCommunityWid
-  };
-  await runtime.dataStore.set(subgroupDraftKey(scopeId, flowSessionId), draft);
+    onSessionCreated: async (session) => {
+      const draft: SubgroupDraft = {
+        flowSessionId: session.id,
+        flowType: definition.flowType,
+        scopeId,
+        ...(ctx.groupId ? { groupId: ctx.groupId } : {}),
+        ...(ctx.groupWid ? { groupWid: ctx.groupWid } : {}),
+        chatId: ctx.message.chatId,
+        actorIdentityId: actor.identityId,
+        actorWid: actor.canonicalWid,
+        parentCommunityWid
+      };
+      await runtime.dataStore.set(subgroupDraftKey(scopeId, session.id), draft);
+    },
+    onSessionStartFailed: async (session) => {
+      await runtime.dataStore.delete(subgroupDraftKey(scopeId, session.id));
+    }
+  });
   return { handled: true, text: ctx.t('official.community-subgroups.create.started') };
 }
 
@@ -342,29 +351,37 @@ async function startPinDurationFlow(context: PluginCommandContext, ctx: CommandC
   if (!ctx.message.replyTo) {
     return { handled: true, text: ctx.t('official.community-subgroups.pinQuotedOnly') };
   }
+  const messageId = ctx.message.replyTo.messageId;
   const actorWid = ctx.actor?.wid ?? ctx.message.senderWid;
   const definition = createPinDurationFlowDefinition({
     t: ctx.t,
     promptQuotedMessageId: ctx.message.id
   });
   registerPinDurationHandler(context, definition.flowType, ctx.t);
-  const { flowSessionId } = await context.flowEngine.startFlow({
+  await context.flowEngine.startFlow({
     definition,
     message: ctx.message,
     scopeId,
-    initialData: { actorWid }
+    initialData: { actorWid },
+    onSessionCreated: async (session) => {
+      const draft: PinDraft = {
+        flowSessionId: session.id,
+        flowType: definition.flowType,
+        scopeId,
+        ...(ctx.groupId ? { groupId: ctx.groupId } : {}),
+        groupWid: ctx.groupWid!,
+        chatId: ctx.message.chatId,
+        actorWid,
+        actorIdentityId: subgroupCommandActor(ctx).identityId,
+        promptQuotedMessageId: ctx.message.id,
+        messageId
+      };
+      await runtime.dataStore.set(pinDraftKey(scopeId, session.id), draft);
+    },
+    onSessionStartFailed: async (session) => {
+      await runtime.dataStore.delete(pinDraftKey(scopeId, session.id));
+    }
   });
-  const draft: PinDraft = {
-    flowSessionId,
-    flowType: definition.flowType,
-    scopeId,
-    ...(ctx.groupId ? { groupId: ctx.groupId } : {}),
-    groupWid: ctx.groupWid!,
-    chatId: ctx.message.chatId,
-    actorWid,
-    messageId: ctx.message.replyTo.messageId
-  };
-  await runtime.dataStore.set(pinDraftKey(scopeId, flowSessionId), draft);
   return { handled: true };
 }
 
@@ -511,6 +528,44 @@ async function isCommunityChild(context: PluginCommandContext, ctx: CommandConte
     return false;
   }
   return await context.isCommunityChildGroup?.(ctx.groupWid) ?? false;
+}
+
+function registerFlowRecovery(context: PluginCommandContext): void {
+  for (const kind of ['create', 'pin'] as const) {
+    const prefix = `${COMMUNITY_SUBGROUPS_PLUGIN_ID}.${kind}.`;
+    context.flowEngine.registerDefinitionResolver({
+      ownerId: COMMUNITY_SUBGROUPS_PLUGIN_ID,
+      flowTypePrefix: prefix,
+      async resolve(session) {
+        if (!session.scopeId || !session.flowType.startsWith(prefix) || session.flowType === prefix) {
+          return undefined;
+        }
+        const runtime = requirePluginStateContext(context);
+        if (kind === 'create') {
+          const draft = await runtime.dataStore.get<SubgroupDraft>(subgroupDraftKey(session.scopeId, session.id));
+          if (!draftMatchesSession(draft, session) || draft.actorIdentityId !== session.identityId) {
+            return undefined;
+          }
+          const t = await context.i18n.translatorForIdentity(session.identityId, session.scopeId);
+          registerSubgroupFlowCompletionHandler(context, session.flowType, t);
+          return createSubgroupFlowDefinition({ t, flowType: session.flowType });
+        }
+        const draft = await runtime.dataStore.get<PinDraft>(pinDraftKey(session.scopeId, session.id));
+        if (!draftMatchesSession(draft, session)
+          || (draft.actorIdentityId !== undefined && draft.actorIdentityId !== session.identityId)) {
+          return undefined;
+        }
+        const t = await context.i18n.translatorForIdentity(session.identityId, session.scopeId);
+        registerPinDurationHandler(context, session.flowType, t);
+        return createPinDurationFlowDefinition({ t, flowType: session.flowType, promptQuotedMessageId: draft.promptQuotedMessageId });
+      }
+    });
+  }
+}
+
+function draftMatchesSession<T extends SubgroupDraft | PinDraft>(draft: T | undefined, session: FlowSessionSnapshot): draft is T {
+  return Boolean(draft && draft.flowSessionId === session.id && draft.flowType === session.flowType
+    && draft.scopeId === session.scopeId && draft.chatId === session.chatId);
 }
 
 function subgroupDraftKey(scopeId: string, flowSessionId: string): string {

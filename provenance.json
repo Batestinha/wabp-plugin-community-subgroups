@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "sourceRepository": "https://github.com/Batestinha/wabp",
+  "sourceCommit": "f807578e4e8f0b4724f2878adad6672f470b02d6",
+  "sourceDirectory": "src/plugins/official/community-subgroups",
+  "sourceTreeSha": "a7d4a25db2f858c8cdf9f55721c70fd7faafd475",
+  "extractedHistoryCommit": "1649d73f4988070ff732023de10b38eacd9dea95",
+  "sdk": {
+    "version": "0.3.5",
+    "path": "vendor/wabs-plugin-sdk-0.3.5-4ccf955f5139.tgz",
+    "sha256": "4ccf955f5139d6c13f740292e2ee2144451af0141493cb8c3d4a5b893369366e",
+    "sourceDirectory": "packages/plugin-sdk",
+    "sourceCommit": "1c4d8cfbfad1082bff31a602fc45f5ce0b9f4050"
+  },
+  "vendoredContracts": "contracts/provenance.json",
+  "adaptationSourceCommit": "1c4d8cfbfad1082bff31a602fc45f5ce0b9f4050"
+}

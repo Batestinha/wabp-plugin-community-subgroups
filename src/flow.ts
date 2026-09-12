@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import type { FlowDefinition } from '../../../../packages/plugin-sdk/src/flow-types';
-import type { FlowSessionSnapshot } from '../../../../packages/plugin-sdk/src/flow-engine';
-import type { TranslateFn } from '../../../../packages/plugin-sdk/src/i18n';
+import type { FlowDefinition } from '@wabs/plugin-sdk/flow-types';
+import type { FlowSessionSnapshot } from '@wabs/plugin-sdk/flow-engine';
+import type { TranslateFn } from '@wabs/plugin-sdk/i18n';
 
 export const SUBGROUP_CONFIRM_STEP_ID = 'confirm';
 export const PIN_DURATION_STEP_ID = 'duration';
@@ -20,8 +20,9 @@ export interface SubgroupFlowAnswers {
 
 export function createSubgroupFlowDefinition(input: {
   t: TranslateFn;
+  flowType?: string | undefined;
 }): FlowDefinition {
-  const flowType = `official.community-subgroups.create.${randomUUID()}`;
+  const flowType = input.flowType ?? `official.community-subgroups.create.${randomUUID()}`;
   return {
     flowType,
     t: input.t,
@@ -96,9 +97,10 @@ export function createSubgroupFlowDefinition(input: {
 
 export function createPinDurationFlowDefinition(input: {
   t: TranslateFn;
+  flowType?: string | undefined;
   promptQuotedMessageId?: string | undefined;
 }): FlowDefinition {
-  const flowType = `official.community-subgroups.pin.${randomUUID()}`;
+  const flowType = input.flowType ?? `official.community-subgroups.pin.${randomUUID()}`;
   return {
     flowType,
     t: input.t,
