@@ -62,7 +62,7 @@ interface PinDraft {
 const GROUP_MEMBER_COMMAND: Omit<PluginCommandMetadata, 'auditAction' | 'mutation' | 'interactionPolicy'> = {
   plane: 'group_operation',
   interaction: 'group_same_chat',
-    invocation: 'group_only',
+  invocation: 'group_only',
   pluginId: COMMUNITY_SUBGROUPS_PLUGIN_ID,
   requiredAccessPlane: 'group_member',
   requiresManagedGroup: true,
@@ -148,7 +148,7 @@ async function startCreateFlow(context: PluginCommandContext, ctx: CommandContex
         scopeId,
         ...(ctx.groupId ? { groupId: ctx.groupId } : {}),
         ...(ctx.groupWid ? { groupWid: ctx.groupWid } : {}),
-        chatId: ctx.message.chatId,
+        chatId: actor.deliveryChatId,
         actorIdentityId: actor.identityId,
         actorWid: actor.canonicalWid,
         parentCommunityWid
