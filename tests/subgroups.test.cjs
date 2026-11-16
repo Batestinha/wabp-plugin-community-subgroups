@@ -3,7 +3,7 @@ const { test } = require('node:test');
 const fs = require('node:fs');
 const plugin = require('../dist').default;
 const api = require('../dist/serviceApi');
-const actor = { wid: 'fixture@c.us', fromMe: false, identityAddress: { identityId: 'fixture-identity', canonicalWid: 'fixture@c.us', aliases: ['fixture@c.us'] } };
+const actor = { wid: 'fixture@c.us', fromMe: false, identityAddress: { identityId: 'fixture-identity', canonicalWid: 'fixture@c.us', deliveryChatId: 'fixture@c.us', mentionWid: 'fixture@c.us', aliases: ['fixture@c.us'] } };
 const requiredCreator = { identityId: 'fixture-identity', participantWid: 'fixture@c.us', evidenceDigest: 'a'.repeat(64) };
 const t = (key) => plugin.manifest.defaultMessages[key] ?? key;
 
@@ -25,7 +25,9 @@ function harness({ config = {}, store = new Map(), ownership = async () => ({ ki
       getSessionSnapshot: async () => starts.at(-1)?.session,
       startFlow: async (input) => {
         const session = { id: 'fixture-session', flowType: input.definition.flowType, scopeId: input.scopeId,
-          identityId: actor.identityAddress.identityId, chatId: input.message.chatId, status: 'ACTIVE',
+          identityId: actor.identityAddress.identityId,
+          chatId: input.definition.interactionPolicy.kind === 'guided'
+            ? actor.identityAddress.deliveryChatId : input.message.chatId, status: 'ACTIVE',
           state: { currentStepId: input.definition.initialStepId, history: [], data: {} }, expiresAt: new Date('2099-01-01') };
         assert.equal(store.size, 0, 'no draft exists before session persistence');
         await input.onSessionCreated(session);
@@ -63,6 +65,7 @@ for (const kind of ['create', 'pin']) {
     const original = harness();
     await original.run(kind === 'create' ? 'subgroup.create' : 'pin.*');
     const { input, session } = original.starts[0];
+    assert.equal(session.chatId, kind === 'create' ? actor.identityAddress.deliveryChatId : 'fixture@g.us');
     const restarted = harness({ store: original.store });
     const resolver = restarted.resolvers.find((r) => session.flowType.startsWith(r.flowTypePrefix));
     const definition = await resolver.resolve(session);
