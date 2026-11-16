@@ -27,7 +27,8 @@ export function createSubgroupFlowDefinition(input: {
     flowType,
     t: input.t,
     initialStepId: 'title',
-    context: 'group',
+    interactionPolicy: { kind: 'guided', conversationAudience: 'requester', resultAudience: 'requester' },
+    context: 'either',
     timeoutMinutes: 30,
     completionReply: input.t('official.community-subgroups.flow.complete'),
     steps: {
@@ -105,7 +106,8 @@ export function createPinDurationFlowDefinition(input: {
     flowType,
     t: input.t,
     initialStepId: PIN_DURATION_STEP_ID,
-    context: 'group',
+    interactionPolicy: { kind: 'brief', conversationAudience: 'requester', resultAudience: 'requester' },
+    context: 'either',
     timeoutMinutes: 10,
     completionReply: false,
     steps: {
