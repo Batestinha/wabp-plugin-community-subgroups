@@ -1,4 +1,4 @@
-import type { CommandMetadata } from '@wabs/plugin-sdk/command-metadata';
+import type { PluginCommandMetadata, CommandMetadata } from '@wabs/plugin-sdk/command-metadata';
 import type { FlowSessionSnapshot } from '@wabs/plugin-sdk/flow-engine';
 import type { CommandContext } from '@wabs/plugin-sdk/commands';
 import type { CommunityCommandPluginContext as PluginCommandContext } from '@wabs/plugin-sdk/community-operations';
@@ -59,9 +59,10 @@ interface PinDraft {
   messageId: string;
 }
 
-const GROUP_MEMBER_COMMAND: Omit<CommandMetadata, 'auditAction' | 'mutation'> = {
+const GROUP_MEMBER_COMMAND: Omit<PluginCommandMetadata, 'auditAction' | 'mutation' | 'interactionPolicy'> = {
   plane: 'group_operation',
   interaction: 'group_same_chat',
+    invocation: 'group_only',
   pluginId: COMMUNITY_SUBGROUPS_PLUGIN_ID,
   requiredAccessPlane: 'group_member',
   requiresManagedGroup: true,
@@ -76,6 +77,7 @@ export function registerCommunitySubgroupCommands(context: PluginCommandContext)
   registerFlowRecovery(context);
 
   router.register('subgroup', 'create', commandMetadata({
+    interactionPolicy: { kind: 'guided', conversationAudience: 'requester', resultAudience: 'requester' },
     auditAction: 'community_subgroups.create',
     usage: '/subgroup create',
     descriptionKey: 'official.community-subgroups.help.create',
@@ -84,6 +86,7 @@ export function registerCommunitySubgroupCommands(context: PluginCommandContext)
   }), async (ctx) => startCreateFlow(context, ctx));
 
   router.register('title', '*', commandMetadata({
+    interactionPolicy: { kind: 'immediate', conversationAudience: 'requester', resultAudience: 'invoking_chat' },
     auditAction: 'community_subgroups.title',
     usage: '/title new group title',
     descriptionKey: 'official.community-subgroups.help.title',
@@ -92,6 +95,7 @@ export function registerCommunitySubgroupCommands(context: PluginCommandContext)
   }), async (ctx) => updateTitle(context, ctx));
 
   router.register('description', '*', commandMetadata({
+    interactionPolicy: { kind: 'immediate', conversationAudience: 'requester', resultAudience: 'invoking_chat' },
     auditAction: 'community_subgroups.description',
     usage: '/description new group description',
     descriptionKey: 'official.community-subgroups.help.description',
@@ -100,6 +104,7 @@ export function registerCommunitySubgroupCommands(context: PluginCommandContext)
   }), async (ctx) => updateDescription(context, ctx));
 
   router.register('pin', '*', commandMetadata({
+    interactionPolicy: { kind: 'brief', conversationAudience: 'requester', resultAudience: 'invoking_chat' },
     auditAction: 'community_subgroups.pin',
     usage: '/pin',
     descriptionKey: 'official.community-subgroups.help.pin',
@@ -108,6 +113,7 @@ export function registerCommunitySubgroupCommands(context: PluginCommandContext)
   }), async (ctx) => startPinDurationFlow(context, ctx));
 
   router.register('unpin', '*', commandMetadata({
+    interactionPolicy: { kind: 'immediate', conversationAudience: 'requester', resultAudience: 'invoking_chat' },
     auditAction: 'community_subgroups.unpin',
     usage: '/unpin',
     descriptionKey: 'official.community-subgroups.help.unpin',
@@ -153,7 +159,7 @@ async function startCreateFlow(context: PluginCommandContext, ctx: CommandContex
       await runtime.dataStore.delete(subgroupDraftKey(scopeId, session.id));
     }
   });
-  return { handled: true, text: ctx.t('official.community-subgroups.create.started') };
+  return { handled: true, response: { kind: 'none' as const } };
 }
 
 function registerSubgroupFlowCompletionHandler(
@@ -469,13 +475,15 @@ async function scopedConfigEnabled(context: PluginCommandContext, ctx: CommandCo
 }
 
 function commandMetadata(input: {
+  interactionPolicy: PluginCommandMetadata['interactionPolicy'];
   auditAction: string;
   usage: string;
   descriptionKey: string;
   topicId: 'create-subgroup' | 'edit-subgroup' | 'pin-messages';
   exampleKey: string;
-}): CommandMetadata {
+}): PluginCommandMetadata {
   return {
+    interactionPolicy: input.interactionPolicy,
     ...GROUP_MEMBER_COMMAND,
     mutation: 'durable',
     dangerous: true,
