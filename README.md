@@ -2,7 +2,7 @@
 
 Create community subgroups and manage titles, descriptions and pinned messages through authorized commands and durable host flows.
 
-Standalone WABS package `official.community-subgroups` version `0.1.1`, requiring WABP core API `^0.3.0`. Existing plugin IDs, enabled state, participant limits, subgroup creation policies and saved draft keys remain unchanged. WABP owns flow sessions, scoped storage, authoritative creator identity, lifecycle transactions and transport authorization.
+Standalone WABS package `official.community-subgroups` version `0.1.2`, requiring WABP core API `^0.3.0`. Existing plugin IDs, enabled state, participant limits, subgroup creation policies and saved draft keys remain unchanged. WABP owns flow sessions, scoped storage, authoritative creator identity, lifecycle transactions and transport authorization.
 
 The package includes the SDK, Zod and Portuguese translations. The pinned event subgroup-ownership service contract is included without its provider implementation. `contracts/provenance.json` records its source commit and checksum; packaging rejects changes to those upstream bytes.
 
