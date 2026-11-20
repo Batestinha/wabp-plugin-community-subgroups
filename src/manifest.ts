@@ -18,7 +18,7 @@ export const COMMUNITY_SUBGROUPS_PLUGIN_ID = 'official.community-subgroups';
 export const communitySubgroupsManifest: PluginManifest = {
   pluginId: COMMUNITY_SUBGROUPS_PLUGIN_ID,
   kind: 'managed_group',
-  version: '0.1.1',
+  version: '0.1.2',
   coreApiRange: '^0.3.0',
   messageNamespace: 'official.community-subgroups',
   descriptionKey: 'official.community-subgroups.description',
