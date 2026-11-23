@@ -1,5 +1,7 @@
 # Community Subgroups
 
+This plugin has been retired. Group Administration Assistant (`official.community-admin`) now handles subgroup creation and management. Earlier packages and their checksums remain available for existing deployments and rollback. [Group Administration Assistant](https://github.com/Batestinha/wabp-plugin-community-admin)
+
 Create community subgroups and manage titles, descriptions and pinned messages through authorized commands and durable host flows.
 
 Standalone WABS package `official.community-subgroups` version `0.1.2`, requiring WABP core API `^0.3.0`. Existing plugin IDs, enabled state, participant limits, subgroup creation policies and saved draft keys remain unchanged. WABP owns flow sessions, scoped storage, authoritative creator identity, lifecycle transactions and transport authorization.
