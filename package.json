@@ -1,6 +1,6 @@
 {
   "name": "@wabs/plugin-community-subgroups",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Member-facing community subgroup creation and subgroup profile controls.",
   "license": "MIT",
   "private": true,
