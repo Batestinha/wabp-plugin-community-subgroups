@@ -8,7 +8,7 @@
   },
   "description": "Member-facing community subgroup creation and subgroup profile controls.",
   "kind": "managed_group",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "coreApiRange": "^0.3.0",
   "entrypoint": "dist/index.js",
   "messageNamespace": "official.community-subgroups",
@@ -189,6 +189,13 @@
     ]
   },
   "dependencies": [],
+  "integrations": [
+    {
+      "pluginId": "official.community-events",
+      "versionRange": "*",
+      "description": "Checks whether an event owns a subgroup before allowing members to change its title."
+    }
+  ],
   "assistant": {
     "summary": "Member-facing creation and management of community child groups.",
     "useCases": [

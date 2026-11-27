@@ -15,10 +15,14 @@ import {
 
 export const COMMUNITY_SUBGROUPS_PLUGIN_ID = 'official.community-subgroups';
 
+const { dependencies, integrations } = require('../wa-plugin.json');
+const relationships = { dependencies, integrations };
+
 export const communitySubgroupsManifest: PluginManifest = {
   pluginId: COMMUNITY_SUBGROUPS_PLUGIN_ID,
   kind: 'managed_group',
-  version: '0.1.3',
+  ...relationships,
+  version: '0.1.4',
   coreApiRange: '^0.3.0',
   messageNamespace: 'official.community-subgroups',
   descriptionKey: 'official.community-subgroups.description',
