@@ -23,7 +23,7 @@ export const communitySubgroupsManifest: PluginManifest = {
   kind: 'managed_group',
   ...relationships,
   version: '0.1.4',
-  coreApiRange: '^0.3.0',
+  coreApiRange: '^0.3.31',
   messageNamespace: 'official.community-subgroups',
   descriptionKey: 'official.community-subgroups.description',
   defaultMessages: communitySubgroupsMessages,

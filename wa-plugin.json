@@ -9,7 +9,7 @@
   "description": "Member-facing community subgroup creation and subgroup profile controls.",
   "kind": "managed_group",
   "version": "0.1.4",
-  "coreApiRange": "^0.3.0",
+  "coreApiRange": "^0.3.31",
   "entrypoint": "dist/index.js",
   "messageNamespace": "official.community-subgroups",
   "descriptionKey": "official.community-subgroups.description",
